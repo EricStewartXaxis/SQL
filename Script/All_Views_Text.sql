@@ -1635,59 +1635,6 @@ SELECT Name
 FROM with_rank
 WHERE Ranky = 1
 
-CREATE VIEW [dbo].[Turkey_Opps] AS
-SELECT DISTINCT 'Opportunity Closed Won' StageName
---	  ,CONVERT(VARCHAR(8), CONVERT(DATE,F8,3),3) AS CloseDate
-	  ,dd.CloseDate
-	  ,acct.Advertiser__c AS Advertiser__c
-	  ,acct.Agency__c AS Agency__c
-	  ,(SELECT TOP 1 [Id] FROM [RecordType] WHERE SobjectType = 'Opportunity' AND DeveloperName = 'Turkey') AS RecordTypeId
-	  ,acct.Id AS AccountId
---	  ,'SpainOpp-'+[Field 4] AS External_Id__c
-	  ,dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11]))) AS 'Name'
-	  ,sf_opp.Id
-FROM XaxisETL.[dbo].[Extract_Turkey] eb
-	INNER JOIN (
-				SELECT 'MX' AS [Turk], 'Maxus (Turkey)' AS [SF] UNION
-				SELECT 'MEC' , 'MEC (Turkey)'		UNION
-				SELECT 'MC' , 'Mediacom (Turkey)'	UNION
-				SELECT 'MS' , 'Mindshare (Turkey)'
-				) ags	
-		ON eb.[Field 9] = ags.Turk
-	INNER JOIN (SELECT dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11]))) AS 'Name'
-					  ,MAX(CONVERT(DATE,[Field 7], 101)) AS CloseDate
-			    FROM XaxisETL.dbo.Extract_Turkey
-				WHERE [Field 9] IS NOT NULL
-				  AND [Field 9] <> 'Agency'
-				  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
-				  AND [Field 9] <> 'Campaign Details'
-				GROUP BY dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11])))
-				) dd
-			ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = dd.Name
-	LEFT JOIN Turkey_Accounts acct
-		LEFT JOIN Company__c adv
-			ON acct.Advertiser__c = adv.Id
-		LEFT JOIN Company__c ag
-			ON acct.Agency__c = ag.Id
-		ON ag.Name = ags.SF
-	    AND master.dbo.InitCap(LTRIM(RTRIM(LOWER([Field 10])))) = adv.Name
-		AND ag.Market__c = 'Turkey'
-	LEFT JOIN Opportunity sf_opp
-		ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = sf_opp.Name
-	   AND sf_opp.AccountId = acct.Id
-WHERE [Field 9] IS NOT NULL
-  AND [Field 9] <> 'Agency'
-  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
-  AND [Field 9] <> 'Campaign Details'
-
-
-
-
-
-
-
-
-
 
 CREATE VIEW [dbo].[Beligum_Company] AS
 SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3]))) AS 'Name'
@@ -1887,6 +1834,60 @@ SELECT [StageName]
       ,CASE WHEN StageName = 'Closed Lost' THEN'Campaign not running' ELSE NULL END AS Reason_Lost__c   
   FROM [Beligum_Opp]
 WHERE id is null
+
+
+
+CREATE VIEW [dbo].[Turkey_Opps] AS
+SELECT DISTINCT 'Opportunity Closed Won' StageName
+--	  ,CONVERT(VARCHAR(8), CONVERT(DATE,F8,3),3) AS CloseDate
+	  ,dd.CloseDate
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,acct.Agency__c AS Agency__c
+	  ,(SELECT TOP 1 [Id] FROM [RecordType] WHERE SobjectType = 'Opportunity' AND DeveloperName = 'Turkey') AS RecordTypeId
+	  ,acct.Id AS AccountId
+--	  ,'SpainOpp-'+[Field 4] AS External_Id__c
+	  ,dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11]))) AS 'Name'
+	  ,sf_opp.Id
+FROM XaxisETL.[dbo].[Extract_Turkey] eb
+	INNER JOIN (
+				SELECT 'MX' AS [Turk], 'Maxus (Turkey)' AS [SF] UNION
+				SELECT 'MEC' , 'MEC (Turkey)'		UNION
+				SELECT 'MC' , 'Mediacom (Turkey)'	UNION
+				SELECT 'MS' , 'Mindshare (Turkey)'
+				) ags	
+		ON eb.[Field 9] = ags.Turk
+	INNER JOIN (SELECT dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11]))) AS 'Name'
+					  ,MAX(CONVERT(DATE,[Field 7], 101)) AS CloseDate
+			    FROM XaxisETL.dbo.Extract_Turkey
+				WHERE [Field 9] IS NOT NULL
+				  AND [Field 9] <> 'Agency'
+				  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+				  AND [Field 9] <> 'Campaign Details'
+				GROUP BY dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11])))
+				) dd
+			ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = dd.Name
+	LEFT JOIN Turkey_Accounts acct
+		LEFT JOIN Company__c adv
+			ON acct.Advertiser__c = adv.Id
+		LEFT JOIN Company__c ag
+			ON acct.Agency__c = ag.Id
+		ON ag.Name = ags.SF
+	    AND master.dbo.InitCap(LTRIM(RTRIM(LOWER([Field 10])))) = adv.Name
+		AND ag.Market__c = 'Turkey'
+	LEFT JOIN Opportunity sf_opp
+		ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = sf_opp.Name
+	   AND sf_opp.AccountId = acct.Id
+WHERE [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+
+
+
+
+
+
+
 
 
 
@@ -2807,51 +2808,109 @@ text
 
 
 
+CREATE VIEW [dbo].[BeligumNew_Accounts] AS
 
-CREATE VIEW [dbo].[Beligum_Company] AS
-SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3]))) AS 'Name'
-	  ,'Agency' AS Type__c
-	  ,'Active' AS Status__c
-	  ,'Belgium' AS Market__c
-	  ,sf.Id
+WITH w_Account AS (
+SELECT DISTINCT F5 +' - '+ F3 +' (Belgium)' AS Name
+	  ,acct.Agency__c AS Agency__c
+	  ,F3 AS Agency_Name
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,F5 AS Advertiser_Name
+	  ,acct.Id AS accountID
 FROM XaxisETL.[dbo].[Extract_Belgium] eb
-	LEFT JOIN (SELECT DISTINCT NAME, Id
-			  FROM Company__c 
-			  WHERE type__c = 'Agency'
-			  AND Market__c LIKE '%Belgium%') sf
-	ON  sf.NAME LIKE '%'+dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3])))+'%'
-WHERE eb.[F3] IS NOT NULL
-	AND eb.[F5] IS NOT NULL
-	AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3]))) <> ''
-	AND eb.id > 8
+	LEFT JOIN (SELECT acct.Id
+					  ,acct.Advertiser__c
+					  ,acct.Agency__c
+					  ,sf_ag.NAME AS Agency_Name
+					  ,sf_ad.NAME AS Advertiser_Name
+				FROM Account acct
+					INNER JOIN (SELECT ag.NAME
+									 ,ag.Id
+							   FROM Company__c ag
+							   WHERE ag.type__c = 'Agency'
+							   AND Market__c LIKE '%Belgium%') sf_ag
+						ON acct.Agency__c = sf_ag.Id
+					INNER JOIN (SELECT ad.NAME
+									  ,ad.Id
+								FROM Company__c ad
+								WHERE ad.type__c = 'Advertiser') sf_ad
+						ON acct.Advertiser__c = sf_ad.Id
+				WHERE acct.Advertiser__c IS NOT NULL
+				  AND acct.Agency__c IS NOT NULL
+				  AND sf_ag.NAME IS NOT NULL
+				  AND sf_ad.NAME IS NOT NULL
+				  ) acct
+	ON acct.Advertiser_Name = eb.F5
+   AND acct.Agency_Name = eb.F3
+WHERE eb.id > 8
+ -- AND acct.id IS NULL
+  AND [F3] IS NOT NULL
+  AND [F5] IS NOT NULL
+  AND LTRIM(RTRIM([F3])) <> ''
+  AND LTRIM(RTRIM([F5])) <> ''
+  
+)
+, Adv_Count AS (
+	SELECT bc.id
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
+	FROM Beligum_Company bc
+		LEFT JOIN Account ba
+			ON bc.Id = ba.Advertiser__c
+	WHERE bc.Type__c = 'Advertiser'
+	GROUP BY bc.Id)
+, Adv_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Advertiser')
+,  Ag_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Agency')
+, with_rank AS (
+	SELECT wa.Name
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY ISNULL(Adv_Count.a_count, 0), ISNULL(Adv_Created.CreatedDate, 0), Ag_Created.CreatedDate) AS Ranky
+		  ,wa.accountID AS Id
+	FROM w_Account wa
+		LEFT JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+				   FROM Company__c ag
+				   WHERE ag.type__c = 'Agency'
+					 AND ag.Market__c LIKE '%Belgium%'
+					 ) sf_ag
+			ON wa.Agency_Name = LEFT(sf_ag.Name, LEN(wa.Agency_Name))
+		LEFT JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM Company__c ad
+				   WHERE ad.type__c = 'Advertiser') sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+		LEFT JOIN Adv_Count
+			ON sf_ad.id = Adv_Count.Id
+		LEFT JOIN Adv_Created
+			ON sf_ad.id = Adv_Created.Id
+		LEFT JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
 
-UNION ALL
-
---Find new Advertiser
-
-SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) AS 'Name'
-	,'Advertiser' AS Type__c
-	,'Active' AS Status__c
-	,NULL AS Market__c
-	,sf.Id
-FROM XaxisETL.[dbo].[Extract_Belgium] eb
-	LEFT JOIN (SELECT DISTINCT NAME, Id
-			  FROM Company__c
-			  WHERE type__c = 'Advertiser') sf
-	ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) = sf.NAME
-WHERE eb.[F3] IS NOT NULL
-	AND eb.[F5] IS NOT NULL
-	AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) <> ''
-	AND eb.id > 8
---	AND sf.NAME IS NULL
-
-
-
-
-
-
-
-
+--	WHERE wa.Agency__c IS NULL
+--	OR wa.Advertiser__c IS NULL
+	)
+SELECT Name
+	  ,Advertiser__c
+	  ,Agency__c
+	  ,Business_Unit__c
+	  ,Account_Opt_In_Status__c
+	  ,RecordTypeId
+	  ,Id
+FROM with_rank
+WHERE Ranky = 1
 
 
 
@@ -2901,9 +2960,9 @@ WHERE eb.id > 8
 )
 , Adv_Count AS (
 	SELECT bc.id
-		  ,COUNT(ba.Id) AS a_count
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
 	FROM Beligum_Company bc
-		INNER JOIN Account ba
+		LEFT JOIN Account ba
 			ON bc.Id = ba.Advertiser__c
 	WHERE bc.Type__c = 'Advertiser'
 	GROUP BY bc.Id)
@@ -2919,7 +2978,7 @@ WHERE eb.id > 8
 	WHERE bc.Type__c = 'Agency')
 , Acct_Count AS (
 	SELECT AccountId
-		  ,COUNT(Id) AS account_count
+		  ,ISNULL(COUNT(Id), 0) AS account_count
 	FROM Opportunity
 	GROUP BY AccountId
 	)
@@ -2942,14 +3001,14 @@ WHERE eb.id > 8
 					 AND ag.Market__c LIKE '%Belgium%'
 					 ) sf_ag
 			ON wa.Agency_Name = sf_ag.Name
-		   AND wa.Agency__c = sf_ag.Id
+--		   AND wa.Agency__c = sf_ag.Id
 		INNER JOIN( 
 				   SELECT ad.NAME
 						,ad.Id
 				   FROM Beligum_Company ad
 				   WHERE ad.type__c = 'Advertiser') sf_ad
 			ON wa.Advertiser_Name = sf_ad.Name
-		   AND wa.Advertiser__c = sf_ad.Id
+--		   AND wa.Advertiser__c = sf_ad.Id
 		INNER JOIN Adv_Count
 			ON Adv_Count.Id = sf_ad.id
 		INNER JOIN Adv_Created
@@ -2975,5 +3034,775 @@ WHERE Ranky = 1
 
 
 
+
+
+
+
+
+CREATE VIEW [dbo].[Beligum_Company] AS
+SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3]))) AS 'Name'
+	  ,'Agency' AS Type__c
+	  ,'Active' AS Status__c
+	  ,'Belgium' AS Market__c
+	  ,sf.Id
+FROM XaxisETL.[dbo].[Extract_Belgium] eb
+	LEFT JOIN (SELECT DISTINCT NAME, Id
+			  FROM Company__c 
+			  WHERE type__c = 'Agency'
+			  AND Market__c LIKE '%Belgium%') sf
+	ON  sf.NAME LIKE '%'+dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3])))+'%'
+WHERE eb.[F3] IS NOT NULL
+	AND eb.[F5] IS NOT NULL
+	AND eb.[F8] IS NOT NULL
+	AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F3]))) <> ''
+	AND eb.id > 8
+
+UNION ALL
+
+--Find new Advertiser
+
+SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) AS 'Name'
+	,'Advertiser' AS Type__c
+	,'Active' AS Status__c
+	,NULL AS Market__c
+	,sf.Id
+FROM XaxisETL.[dbo].[Extract_Belgium] eb
+	LEFT JOIN (SELECT DISTINCT NAME, Id
+			  FROM Company__c
+			  WHERE type__c = 'Advertiser') sf
+	ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) = sf.NAME
+WHERE eb.[F3] IS NOT NULL
+	AND eb.[F5] IS NOT NULL
+	AND eb.[F8] IS NOT NULL
+	AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F5]))) <> ''
+	AND eb.id > 8
+--	AND sf.NAME IS NULL
+
+
+
+
+
+
+
+
+
+
+CREATE VIEW [dbo].[Beligum_Opp] AS
+SELECT DISTINCT CASE WHEN F17 IS NULL THEN 'Speculative'
+					 WHEN F17 LIKE 'Signed' THEN 'Contract Pending'
+					 WHEN F17 LIKE 'Signed+Matos' THEN 'Closed Won'
+--					 WHEN F17 LIKE 'Not Agreed' THEN 'Closed Lost'
+					 ELSE 'Contacted / Prospecting'
+				END AS StageName
+--	  ,CONVERT(VARCHAR(8), CONVERT(DATE,F8,3),3) AS CloseDate
+	  ,CONVERT(DATE,F8,3) AS CloseDate
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,acct.Agency__c AS Agency__c
+	  ,(SELECT TOP 1 [Id] FROM [RecordType] WHERE SobjectType = 'Opportunity' AND DeveloperName = 'Belgium') AS RecordTypeId
+	  ,acct.Id AS AccountId
+	  ,'BelgiumOpp-'+F2 AS External_Id__c
+	  ,CASE WHEN sf_opp_dup.Name IS NULL OR sf_opp.Id IS NOT NULL THEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6)))
+			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6)))
+		END AS 'Name'
+	  ,sf_opp.Id
+	  ,CASE WHEN StageName = 'Closed Lost' THEN'Campaign not running' ELSE NULL END AS Reason_Lost__c   
+	  ,'EUR' AS CurrencyIsoCode
+
+FROM XaxisETL.[dbo].[Extract_Belgium] eb
+	LEFT JOIN Beligum_Accounts acct
+		LEFT JOIN Company__c adv
+			ON acct.Advertiser__c = adv.Id
+		LEFT JOIN Company__c ag
+			ON acct.Agency__c = ag.Id
+		ON ag.Name LIKE dbo.ReplaceExtraChars(eb.F3) + '%(Belgium)%'
+	    AND dbo.ReplaceExtraChars(eb.F5) = adv.Name
+	LEFT JOIN Opportunity sf_opp
+		ON  (dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F6]))) = sf_opp.Name
+		  OR 'NewBelgiumOpp-' +dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F6]))) = sf_opp.Name
+		  OR 'BelgiumOpp-'+eb.F2 = sf_opp.External_Id__c
+		  )
+	   AND sf_opp.AccountId = acct.Id
+	LEFT JOIN (SELECT DISTINCT Name, External_Id__c
+			   FROM Opportunity) sf_opp_dup
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM([F6]))) = sf_opp_dup.Name
+	   AND 'BelgiumOpp-'+F2 <> ISNULL(sf_opp_dup.External_Id__c, 0)
+WHERE eb.id > 8
+  AND [F8] IS NOT NULL
+  AND dbo.ReplaceExtraChars(LTRIM(RTRIM([F8]))) <> ''
+  
+
+
+
+CREATE VIEW [dbo].[Beligum_Sell_Lines_PreSplit] AS
+		SELECT bo.Id AS Opportunity__c
+			  ,'BelgiumOpp-'+F2 AS External_ID__c
+			  ,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F10))) AS Product_Detail__c
+			  ,CAST(CONVERT(DATE,eb.F7,3) AS DATE) AS Start_Date__c
+			  ,CAST(CONVERT(DATE,eb.F8,3) AS DATE) AS End_Date__c
+--			  ,CONVERT(MONEY, REPLACE(eb.F24, ',','')) AS Gross_Cost__c
+			  ,dbo.ReplaceExtraChars(eb.F6) AS Buy_Name_txt__c
+			  ,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
+			  ,'MediaTrader' AS	PackageType__c
+			  ,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Belgium') AS RecordTypeId
+			  ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F4))) = ''
+				    THEN NULL
+					ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F4)))
+				END AS Supplier_Name__c
+			  ,CONVERT(MONEY, REPLACE(eb.F21, ',','')) AS Buy_Volume__c_FR
+			  ,CONVERT(MONEY, REPLACE(eb.F22, ',','')) AS Buy_Volume__c_NL
+			  ,CONVERT(MONEY, REPLACE(eb.F25, ',','')) AS Gross_Cost__c_FR
+			  ,CONVERT(MONEY, REPLACE(eb.F26, ',','')) AS Gross_Cost__c_NL
+			  ,CONVERT(MONEY, REPLACE(eb.F23, ',','')) AS Rate__c
+--			  ,0 AS Media_Net_Cost__c
+			  ,CASE WHEN LTRIM(RTRIM(eb.F28)) = '' THEN NULL 
+					WHEN LTRIM(RTRIM(eb.F28)) = 'None' THEN NULL 
+					ELSE LTRIM(RTRIM(eb.F28)) END AS Target_Gender__c
+			  ,CASE WHEN LTRIM(RTRIM(eb.F29)) = '' THEN NULL
+				    WHEN LTRIM(RTRIM(eb.F29)) = 'None' THEN NULL
+					ELSE LTRIM(RTRIM(eb.F29)) END AS Target_Age_Freeform_Entry__c
+			  ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(CONCAT(ISNULL(eb.F34, ''), ' ', ISNULL(eb.F35, ''), ' ', ISNULL(eb.F36, ''), ' ', ISNULL(eb.F37, ''), ' ', ISNULL(eb.F43, ''))))) = ''
+					THEN NULL
+					ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(CONCAT(ISNULL(eb.F34, ''), ' ', ISNULL(eb.F35, ''), ' ', ISNULL(eb.F36, ''), ' ', ISNULL(eb.F37, ''), ' ', ISNULL(eb.F43, '')))))
+			   END AS Opp_Buy_Description__c
+			  ,'Externally Managed' AS Input_Mode__c
+			  ,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F12))) AS Audience_Tier__c
+			  ,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F11))) AS Media_Code__c
+			  ,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F10))) AS Special_Product__c
+			  ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(EB.F18))) = '' THEN NULL ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(EB.F18))) END AS FR_line
+			  ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(EB.F19))) = '' THEN NULL ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(EB.F19))) END AS NL_line
+			  ,'Belgium' AS Delivery_Market__c
+			  ,'CPM' AS Buy_Type__c
+			  ,dbo.ReplaceExtraChars(LTRIM(RTRIM(F30))) AS Frequency_Cap__c
+			  ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(F30))) IS NULL THEN NULL	
+					ELSE 'Per day' 
+				END AS Frequency_Scope__c
+		  FROM Beligum_Opp bo
+			INNER JOIN XaxisETL.dbo.Extract_Belgium eb
+				ON REPLACE( External_Id__c, 'BelgiumOpp-', '') = eb.F2
+		  WHERE eb.id > 8
+		  AND [F3] IS NOT NULL
+		  AND [F5] IS NOT NULL
+		  AND [F8] IS NOT NULL
+		  AND dbo.ReplaceExtraChars(LTRIM(RTRIM([F8]))) <> ''
+
+
+
+
+
+CREATE VIEW [dbo].[Beligum_Sell_Lines] AS
+
+SELECT External_ID__c + '-FR' AS External_ID__c
+	  ,[Opportunity__c]
+      ,[Product_Detail__c]
+      ,[Start_Date__c]
+      ,[End_Date__c]
+      ,[Buy_Name_txt__c]
+      ,[Imputing_Margin_or_Net__c]
+      ,[PackageType__c]
+      ,[RecordTypeId]
+      ,[Supplier_Name__c]
+	  ,Buy_Volume__c_FR AS Buy_Volume__c
+      ,Gross_Cost__c_FR AS Gross_Cost__c
+      ,[Rate__c]
+	  ,0 AS Media_Net_Cost__c
+      ,[Target_Gender__c]
+      ,[Target_Age_Freeform_Entry__c]
+      ,[Opp_Buy_Description__c]
+ --     ,[Input_Mode__c]
+      ,[Audience_Tier__c]
+      ,[Media_Code__c]
+      ,[Special_Product__c]
+      ,[Delivery_Market__c]
+      ,[Buy_Type__c]
+      ,[Frequency_Cap__c]
+      ,[Frequency_Scope__c]
+	  ,'Externally Managed' AS Input_Mode__c
+
+FROM Beligum_Sell_Lines_PreSplit
+WHERE FR_line IS NOT NULL
+   OR LTRIM(RTRIM(FR_line)) <> ''
+UNION ALL
+SELECT External_ID__c + '-NL' AS External_ID__c
+       ,[Opportunity__c]
+      ,[Product_Detail__c]
+      ,[Start_Date__c]
+      ,[End_Date__c]
+      ,[Buy_Name_txt__c]
+      ,[Imputing_Margin_or_Net__c]
+      ,[PackageType__c]
+      ,[RecordTypeId]
+      ,[Supplier_Name__c]
+	  ,Buy_Volume__c_NL AS Buy_Volume__c
+      ,Gross_Cost__c_NL AS Gross_Cost__c
+	  ,[Rate__c]
+      ,0 AS Media_Net_Cost__c
+      ,[Target_Gender__c]
+      ,[Target_Age_Freeform_Entry__c]
+      ,[Opp_Buy_Description__c]
+--      ,[Input_Mode__c]
+      ,[Audience_Tier__c]
+      ,[Media_Code__c]
+      ,[Special_Product__c]
+      ,[Delivery_Market__c]
+      ,[Buy_Type__c]
+      ,[Frequency_Cap__c]
+      ,[Frequency_Scope__c]
+	  ,'Externally Managed' AS Input_Mode__c
+	  
+FROM Beligum_Sell_Lines_PreSplit
+WHERE NL_line IS NOT NULL
+   OR LTRIM(RTRIM(NL_line)) <> ''
+
+
+
+
+
+
+
+CREATE VIEW [dbo].[Spain_Company] AS
+SELECT DISTINCT ag.SF AS 'Name'
+--	  , dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) AS 'Name'
+	  ,'Agency' AS Type__c
+	  ,'Active' AS Status__c
+	  ,'Spain' AS Market__c
+	  ,sf.Id
+FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN (
+				SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
+				SELECT 'MEC' , 'MEC (Spain)'		UNION
+				SELECT 'MC BCN' , 'Mediacom (Spain)'	UNION
+				SELECT 'MC MAD' , 'Mediacom (Spain)'	UNION
+				SELECT 'MS' , 'Mindshare (Spain)'
+				) ag	
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) = ag.Spain
+	LEFT JOIN (SELECT DISTINCT NAME, Id
+			  FROM Company__c 
+			  WHERE type__c = 'Agency'
+			  AND Market__c LIKE '%Spain%') sf
+		ON  sf.NAME LIKE ag.SF
+WHERE eb.[Field 9] IS NOT NULL
+	AND eb.[Field 9] <> 'Agencia'
+	AND eb.[Field 2] IS NOT NULL
+	AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) <> ''
+
+UNION ALL
+
+--Find new Advertiser
+
+SELECT DISTINCT dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) AS 'Name'
+	,'Advertiser' AS Type__c
+	,'Active' AS Status__c
+	,NULL AS Market__c
+	,sf.Id
+FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN (SELECT DISTINCT NAME, Id
+			  FROM Company__c
+			  WHERE type__c = 'Advertiser') sf
+	ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = sf.NAME
+WHERE eb.[Field 11] IS NOT NULL
+  AND eb.[Field 11] <> 'Cliente'
+  AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) <> ''
+  AND eb.[Field 2] IS NOT NULL
+
+
+
+
+
+CREATE VIEW [dbo].[SpainNew_Accounts] AS
+
+WITH w_Account AS (
+SELECT DISTINCT [Field 11] +' - '+ ag.SF AS Name
+	  ,acct.Agency__c AS Agency__c
+--	  ,[Field 9] AS Agency_Name
+	  ,ag.SF AS Agency_Name
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,[Field 11] AS Advertiser_Name
+FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN (
+			SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
+			SELECT 'MEC' , 'MEC (Spain)'		UNION
+			SELECT 'MC BCN' , 'Mediacom (Spain)'	UNION
+			SELECT 'MC MAD' , 'Mediacom (Spain)'	UNION
+			SELECT 'MS' , 'Mindshare (Spain)'
+			) ag
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) = ag.Spain	
+	LEFT JOIN (SELECT acct.Id
+					  ,acct.Advertiser__c
+					  ,acct.Agency__c
+					  ,sf_ag.NAME AS Agency_Name
+					  ,sf_ad.NAME AS Advertiser_Name
+				FROM Account acct
+					INNER JOIN (SELECT ag.NAME
+									 ,ag.Id
+							   FROM Spain_Company ag
+							   WHERE ag.type__c = 'Agency'
+							   AND Market__c LIKE '%Spain%') sf_ag
+						ON acct.Agency__c = sf_ag.Id
+					INNER JOIN (SELECT ad.NAME
+									  ,ad.Id
+								FROM Spain_Company ad
+								WHERE ad.type__c = 'Advertiser') sf_ad
+						ON acct.Advertiser__c = sf_ad.Id
+				WHERE acct.Advertiser__c IS NOT NULL
+				  AND acct.Agency__c IS NOT NULL
+				  AND sf_ag.NAME IS NOT NULL
+				  AND sf_ad.NAME IS NOT NULL
+				  ) acct
+	ON acct.Advertiser_Name = eb.[Field 11]
+   AND acct.Agency_Name = ag.SF
+WHERE eb.[Field 11] IS NOT NULL
+  AND eb.[Field 11] <> 'Cliente'
+ -- AND acct.id IS NULL
+  AND [Field 9] IS NOT NULL
+  AND [Field 11] IS NOT NULL
+  AND LTRIM(RTRIM([Field 9])) <> ''
+  AND LTRIM(RTRIM([Field 11])) <> ''
+  
+)
+, Adv_Count AS (
+	SELECT bc.id
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
+	FROM Spain_Company bc
+		LEFT JOIN Account ba
+			ON bc.Id = ba.Advertiser__c
+	WHERE bc.Type__c = 'Advertiser'
+	GROUP BY bc.Id)
+, Adv_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Advertiser')
+,  Ag_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Agency')
+, with_rank AS (
+	SELECT wa.Name
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count, Adv_Created.CreatedDate, Ag_Created.CreatedDate) AS Ranky
+	FROM w_Account wa
+		INNER JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+				   FROM Spain_Company ag
+				   WHERE ag.type__c = 'Agency'
+					 AND ag.Market__c LIKE '%Spain%'
+					 ) sf_ag
+			ON wa.Agency_Name = sf_ag.Name
+		INNER JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM Spain_Company ad
+				   WHERE ad.type__c = 'Advertiser') sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+		INNER JOIN Adv_Count
+			ON Adv_Count.Id = sf_ad.id
+		INNER JOIN Adv_Created
+			ON Adv_Created.Id = sf_ad.id
+		INNER JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
+
+	WHERE wa.Agency__c IS NULL
+	OR wa.Advertiser__c IS NULL
+	)
+SELECT Name
+	  ,Advertiser__c
+	  ,Agency__c
+	  ,Business_Unit__c
+	  ,Account_Opt_In_Status__c
+	  ,RecordTypeId
+FROM with_rank
+WHERE Ranky = 1
+
+
+
+
+
+CREATE VIEW [dbo].[Spain_Accounts] AS
+
+WITH w_Account AS (
+SELECT DISTINCT [Field 11] +' - '+ ag.SF AS Name
+	  ,acct.Agency__c AS Agency__c
+	  ,acct.Id
+--	  ,[Field 9] AS Agency_Name
+	  ,ag.SF AS Agency_Name
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,[Field 11] AS Advertiser_Name
+FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN (
+			SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
+			SELECT 'MEC' , 'MEC (Spain)'		UNION
+			SELECT 'MC BCN' , 'Mediacom (Spain)'	UNION
+			SELECT 'MC MAD' , 'Mediacom (Spain)'	UNION
+			SELECT 'MS' , 'Mindshare (Spain)'
+			) ag
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) = ag.Spain	
+	LEFT JOIN (SELECT acct.Id
+					  ,acct.Advertiser__c
+					  ,acct.Agency__c
+					  ,sf_ag.NAME AS Agency_Name
+					  ,sf_ad.NAME AS Advertiser_Name
+				FROM Account acct
+					INNER JOIN (SELECT ag.NAME
+									 ,ag.Id
+							   FROM Spain_Company ag
+							   WHERE ag.type__c = 'Agency'
+							   AND Market__c LIKE '%Spain%') sf_ag
+						ON acct.Agency__c = sf_ag.Id
+					INNER JOIN (SELECT ad.NAME
+									  ,ad.Id
+								FROM Spain_Company ad
+								WHERE ad.type__c = 'Advertiser') sf_ad
+						ON acct.Advertiser__c = sf_ad.Id
+				WHERE acct.Advertiser__c IS NOT NULL
+				  AND acct.Agency__c IS NOT NULL
+				  AND sf_ag.NAME IS NOT NULL
+				  AND sf_ad.NAME IS NOT NULL
+				  ) acct
+	ON acct.Advertiser_Name = eb.[Field 11]
+   AND acct.Agency_Name = ag.SF
+WHERE eb.[Field 11] IS NOT NULL
+  AND eb.[Field 11] <> 'Cliente'
+ -- AND acct.id IS NULL
+  AND [Field 9] IS NOT NULL
+  AND [Field 11] IS NOT NULL
+  AND LTRIM(RTRIM([Field 9])) <> ''
+  AND LTRIM(RTRIM([Field 11])) <> ''
+  
+)
+, Adv_Count AS (
+	SELECT bc.id
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
+	FROM Spain_Company bc
+		LEFT JOIN Account ba
+			ON bc.Id = ba.Advertiser__c
+	WHERE bc.Type__c = 'Advertiser'
+	GROUP BY bc.Id)
+, Adv_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Advertiser')
+,  Ag_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Agency')
+, Acct_Count AS (
+	SELECT AccountId
+		  ,ISNULL(COUNT(Id), 0) AS account_count
+	FROM Opportunity
+	GROUP BY AccountId
+	)
+, with_rank AS (
+	SELECT DISTINCT wa.Name
+		  ,wa.Id
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count, Adv_Created.CreatedDate, Ag_Created.CreatedDate) AS Ranky
+	FROM w_Account wa
+		INNER JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+				   FROM Spain_Company ag
+				   WHERE ag.type__c = 'Agency'
+					 AND ag.Market__c LIKE '%Spain%'
+					 ) sf_ag
+			ON wa.Agency_Name = sf_ag.Name
+		INNER JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM Spain_Company ad
+				   WHERE ad.type__c = 'Advertiser') sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+		INNER JOIN Adv_Count
+			ON Adv_Count.Id = sf_ad.id
+		INNER JOIN Adv_Created
+			ON Adv_Created.Id = sf_ad.id
+		INNER JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
+		LEFT JOIN Acct_Count
+			ON Acct_Count.AccountId = wa.Advertiser__c
+
+--	WHERE wa.Agency__c IS NULL
+--	OR wa.Advertiser__c IS NULL
+	)
+SELECT Name
+	  ,Id
+	  ,Advertiser__c
+	  ,Agency__c
+	  ,Business_Unit__c
+	  ,Account_Opt_In_Status__c
+	  ,RecordTypeId
+FROM with_rank
+WHERE Ranky = 1
+
+
+
+
+
+CREATE VIEW [dbo].[Spain_Buy_Placement] AS
+
+SELECT DISTINCT ISNULL(dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16])))+'-' , '') + sl.External_Id__c  AS Name
+	 ,bu.Id
+	 ,sl.Id AS Sell_Line__c
+	 ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16]))) = '' THEN NULL
+		   ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16]))) 
+	  END AS Creative_Format__c
+	 ,SUM(ISNULL(CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars(eb.[Field 21]), ',','')), 0)) AS Actual_Cost__c
+	 ,CAST(CONVERT(DATE,eb.[Field 7],101) AS DATE) AS Start_Date__c
+	 ,CAST(CONVERT(DATE,eb.[Field 8],101) AS DATE) AS End_Date__c
+	 ,'EUR' AS [CurrencyIsoCode]
+FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN Opportunity_Buy__c sl
+		ON CAST([Field 4] AS VARCHAR) = CAST(REPLACE(sl.External_Id__c, 'SpainOpp-', '') AS VARCHAR)
+	LEFT JOIN Buy_Placement__c bu
+		ON ISNULL(dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16])))+'-' , '') + sl.External_Id__c = bu.External_Id__c
+WHERE  eb.[Field 11] IS NOT NULL
+	AND eb.[Field 11] <> 'Cliente'
+	-- AND acct.id IS NULL
+	AND [Field 9] IS NOT NULL
+	AND [Field 11] IS NOT NULL
+	AND LTRIM(RTRIM([Field 9])) <> ''
+	AND LTRIM(RTRIM([Field 11])) <> ''
+	AND LTRIM(RTRIM([Field 1])) = 'Compra'
+GROUP BY ISNULL(dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16])))+'-' , '') + sl.External_Id__c
+	   ,bu.Id
+	   ,sl.Id
+	   ,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16]))) = '' THEN NULL
+			   ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 16]))) 
+		  END
+	   ,CAST(CONVERT(DATE,eb.[Field 7],101) AS DATE)
+	   ,CAST(CONVERT(DATE,eb.[Field 8],101) AS DATE)
+
+
+
+
+
+
+
+
+
+CREATE VIEW [dbo].[Turkey_Company] AS
+
+SELECT DISTINCT ag.SF AS Name
+	  ,'Agency' AS Type__c
+	  ,'Active' AS Status__c
+	  ,'Turkey' AS Market__c
+	  ,com.Id
+  FROM [XaxisETL].[dbo].[Extract_Turkey] et
+	INNER JOIN (
+				SELECT 'MX' AS [Turk], 'Maxus (Turkey)' AS [SF] UNION
+				SELECT 'MEC' , 'MEC (Turkey)'		UNION
+				SELECT 'MC' , 'Mediacom (Turkey)'	UNION
+				SELECT 'MS' , 'Mindshare (Turkey)'
+				) ag	
+		ON et.[Field 9] = ag.Turk
+	LEFT JOIN Company__c com
+		ON com.Name = ag.SF
+	   AND com.Market__c = 'Turkey'
+	   AND com.Type__c = 'Agency'
+WHERE [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+
+UNION ALL
+
+SELECT DISTINCT master.dbo.InitCap(LTRIM(RTRIM(LOWER([Field 10])))) AS Name
+      ,'Advertiser' AS Type__c
+	  ,'Active' AS Status__c
+	  ,NULL AS Market__c
+	  ,com.Id
+FROM [XaxisETL].[dbo].[Extract_Turkey] et
+	LEFT JOIN (SELECT Name, Id 
+			  FROM Company__c
+			  WHERE LEFT(Name, 5) <> '[SFL]'
+			    AND Type__c = 'Advertiser') com
+		ON master.dbo.InitCap(LTRIM(RTRIM(LOWER(et.[Field 10])))) = com.Name
+WHERE [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+
+
+
+
+CREATE VIEW [dbo].[Turkey_Accounts] AS
+
+WITH w_Account AS (
+SELECT DISTINCT master.dbo.InitCap(LTRIM(RTRIM(LOWER([Field 10])))) +' - '+ ag.sf AS Name
+	  ,acct.Id
+	  ,acct.Agency__c AS Agency__c
+	  ,ag.sf AS Agency_Name
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,master.dbo.InitCap(LTRIM(RTRIM(LOWER([Field 10])))) AS Advertiser_Name
+FROM XaxisETL.[dbo].[Extract_Turkey] eb
+	LEFT JOIN (
+					SELECT 'MX' AS [Turk], 'Maxus (Turkey)' AS [SF] UNION
+					SELECT 'MEC' , 'MEC (Turkey)'		UNION
+					SELECT 'MC' , 'Mediacom (Turkey)'	UNION
+					SELECT 'MS' , 'Mindshare (Turkey)'
+					) ag	
+			ON eb.[Field 9] = ag.Turk
+	LEFT JOIN (SELECT acct.Id
+					  ,acct.Advertiser__c
+					  ,acct.Agency__c
+					  ,sf_ag.NAME AS Agency_Name
+					  ,sf_ad.NAME AS Advertiser_Name
+				FROM Account acct
+					INNER JOIN (SELECT ag.NAME
+									 ,ag.Id
+							   FROM Turkey_Company ag
+							   WHERE ag.type__c = 'Agency'
+							   AND Market__c = 'Turkey') sf_ag
+						ON acct.Agency__c = sf_ag.Id
+					INNER JOIN (SELECT ad.NAME
+									  ,ad.Id
+								FROM Turkey_Company ad
+								WHERE ad.type__c = 'Advertiser') sf_ad
+						ON acct.Advertiser__c = sf_ad.Id
+				WHERE acct.Advertiser__c IS NOT NULL
+				  AND acct.Agency__c IS NOT NULL
+				  AND sf_ag.NAME IS NOT NULL
+				  AND sf_ad.NAME IS NOT NULL
+				  ) acct
+	ON acct.Advertiser_Name = master.dbo.InitCap(LTRIM(RTRIM(LOWER(eb.[Field 10]))))
+   AND acct.Agency_Name = ag.SF
+WHERE [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+  
+)
+, Adv_Count AS (
+	SELECT bc.id
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
+	FROM Turkey_Company bc
+		LEFT JOIN Account ba
+			ON bc.Id = ba.Advertiser__c
+	WHERE bc.Type__c = 'Advertiser'
+	GROUP BY bc.Id)
+, Adv_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Advertiser')
+,  Ag_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Agency')
+, Acct_Count AS (
+	SELECT AccountId
+		  ,ISNULL(COUNT(Id), 0) AS account_count
+	FROM Opportunity
+	GROUP BY AccountId
+	)
+
+, with_rank AS (
+	SELECT DISTINCT wa.Name
+		  ,wa.Id
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count, Adv_Created.CreatedDate, Ag_Created.CreatedDate, ISNULL(Acct_Count.account_count, 0) DESC, wa.Id) AS Ranky
+--		  ,Adv_Count.a_count
+--		  ,Adv_Created.CreatedDate AS adv_crd
+--		  ,Ag_Created.CreatedDate  
+--		  ,ISNULL(Acct_Count.account_count, 0) AS account_count
+	FROM w_Account wa
+		LEFT JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+				   FROM Turkey_Company ag
+				   WHERE ag.type__c = 'Agency'
+					 AND ag.Market__c = 'Turkey'
+					 ) sf_ag
+			ON wa.Agency_Name = sf_ag.Name
+--		   AND wa.Agency__c = sf_ag.Id
+		LEFT JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM Turkey_Company ad
+				   WHERE ad.type__c = 'Advertiser') sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+--		   AND wa.Advertiser__c = sf_ad.Id
+		LEFT JOIN Adv_Count
+			ON Adv_Count.Id = sf_ad.id
+		LEFT JOIN Adv_Created
+			ON Adv_Created.Id = sf_ad.id
+		LEFT JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
+		LEFT JOIN Acct_Count
+			ON wa.Id = Acct_Count.AccountId
+
+--	WHERE wa.Agency__c IS NULL
+--	OR wa.Advertiser__c IS NULL
+)
+
+SELECT Name
+	  ,Id
+	  ,Advertiser__c
+	  ,Agency__c
+	  ,Business_Unit__c
+	  ,Account_Opt_In_Status__c
+	  ,RecordTypeId
+FROM with_rank
+WHERE Ranky = 1
+
+
+CREATE VIEW [dbo].[Turkey_Sell_Lines] AS
+
+SELECT opp.Id AS Opportunity__c
+--	  ,CONVERT(VARCHAR(1000), HashBytes('MD5', [Field 2] + [Field 13]), 2) AS External_ID__c
+--      ,CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) AS External_ID__c
+	  ,'TurkeyOpp-' + CAST(et.External_pk AS VARCHAR) AS External_ID__c
+	  ,dbo.ReplaceExtraChars([Field 15]) AS Product_Detail__c
+      ,CAST(CONVERT(DATE,[Field 6],101) AS DATE) AS Start_Date__c
+      ,CAST(CONVERT(DATE,[Field 7],101) AS DATE) AS End_Date__c
+      ,dbo.ReplaceExtraChars([Field 2]) AS Buy_Name_txt__c
+      ,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
+      ,'MediaTrader' AS PackageType__c
+      ,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Turkey') AS RecordTypeId
+      ,dbo.ReplaceExtraChars([Field 13]) AS Supplier_Name__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 21], 0)), ',',''), 'TL', ''), 'click', '')) AS Buy_Volume__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 31], 0)), ',',''), 'TL', '')) AS Gross_Cost__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 20], 0)), ',',''), 'TL', '')) AS Rate__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 32], 0)), ',',''), 'TL', '')) AS Media_Net_Cost__c
+      ,dbo.ReplaceExtraChars([Field 16]) AS Buy_Type__c
+      ,'Triggers' AS Audience_Tier__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 36], 0)), ',',''), '%',''))/100 AS Current_Margin__c
+      ,'From spreadsheet: ' + [Tag: Filename] AS Current_Margin_Explanation__c
+      ,dbo.ReplaceExtraChars([Field 17]) AS Opp_Buy_Description__c
+      ,'Externally Managed' AS Input_Mode__c
+	  ,'Digital' AS Media_Code__c
+	  ,dbo.ReplaceExtraChars([Field 18]) AS Formats__c
+	  ,sl.Id
+FROM XaxisETL.dbo.Extract_Turkey et
+	LEFT JOIN (SELECT Name, Id
+			   FROM Opportunity
+			   ) opp
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(et.[Field 11]))) = opp.Name
+	   AND HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 2]), '') + ISNULL(dbo.ReplaceExtraChars([Field 13]), '') + ISNULL(dbo.ReplaceExtraChars([Field 16]), ''))
+		 = et.External_ID__c
+	LEFT JOIN dbo.Opportunity_Buy__c sl
+--		ON CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) = sl.External_Id__c
+		ON 'TurkeyOpp-' + CAST(et.External_pk AS VARCHAR) = sl.External_Id__c
+WHERE [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+--  AND sl.External_Id__c IS NULL   
 
 
