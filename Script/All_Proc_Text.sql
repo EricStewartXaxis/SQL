@@ -1681,6 +1681,7 @@ FROM pos_dup eb1
 
 
 
+
 CREATE PROCEDURE [dbo].[Spain_Sell_Lines_sp] AS
 
 
@@ -1808,12 +1809,13 @@ WHERE eb.[Field 11] IS NOT NULL
 SELECT DISTINCT sf_opp.Id AS Opportunity__c
 	    ,sl.Id
 		,'SpainOpp-'+[Field 4] AS External_ID__c
-		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13]))) AS Product_Detail__c
+--		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13]))) AS Product_Detail__c
+	    ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13])))) AS Product_Detail__c
 		,CAST(CONVERT(DATE,eb.[Field 7],101) AS DATE) AS Start_Date__c
 		,CAST(CONVERT(DATE,eb.[Field 8],101) AS DATE) AS End_Date__c
---			  ,CONVERT(MONEY, REPLACE(eb.F24, ',','')) AS Gross_Cost__c
-		,dbo.ReplaceExtraChars(ISNULL(eb.[Field 23], '') + ' ' + ISNULL(eb.[F
-ield 25], '')) AS Buy_Name_txt__c
+--			  ,CONVERT(MONEY, REPLACE(e
+b.F24, ',','')) AS Gross_Cost__c
+		,dbo.ReplaceExtraChars(ISNULL(eb.[Field 23], '') + ' ' + ISNULL(eb.[Field 25], '')) AS Buy_Name_txt__c
 		,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
 		,'MediaTrader' AS	PackageType__c
 		,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Spain') AS RecordTypeId
@@ -1826,6 +1828,7 @@ ield 25], '')) AS Buy_Name_txt__c
 		,CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars(eb.[Field 20]), ',','')) AS Rate__c
 		,ISNULL(sum_media.m_cost, 0) AS Media_Net_Cost__c
 		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 18]))) AS Buy_Type__c
+		,ISNULL(ch.sf_value, 'Digital') AS Media_Code__c
 		,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22]))) = '' THEN 'Triggers'
 			WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22]))) IS NULL THEN 'Triggers'
 			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22])))
@@ -1846,6 +1849,20 @@ ield 25], '')) AS Buy_Name_txt__c
 --					 ELSE 'Contacted / Prospecting'
 --				END AS Sell_Line_Status__c
 FROM XaxisETL.[dbo].[Extract_Spain] eb
+	LEFT JOIN (SELECT m_value
+					 ,sf_value
+			   FROM XaxisETL.dbo.SF_Mapping
+			   WHERE sf_market = 'Spain'
+			     AND sf_type = 'Products'
+			   ) pro
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13]))) = pro.m_value
+	LEFT JOIN (SELECT m_value
+					 ,sf_value
+			    FROM XaxisETL.dbo.SF_Mapping
+				WHERE sf_market = 'Spain'
+				  AND sf_type = 'Channels'
+				) ch
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13]))) = ch.m_value
 	LEFT JOIN (
 			SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
 			SELECT 'MEC' , 'MEC (Spain)'		UNION
@@ -1871,7 +1888,8 @@ FROM XaxisETL.[dbo].[Extract_Spain] eb
 							  ,SUM(ISNULL(CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars([Field 21]), ',','')), 0)) AS m_cost
 						FROM XaxisETL.dbo.Extract_Spain
 						WHERE LTRIM(RTRIM([Field 1])) = 'Compra'
-						  AND LTRIM(RTRIM(REPLACE(dbo.ReplaceExtraChars([Field 21]), ',',''))) <> ''
+						  AND LTRIM(RTRIM(REPLACE(dbo.ReplaceExtraChars([Field 21]), 
+',',''))) <> ''
 						GROUP BY [Field 4]
 						) sum_media
 				ON eb.[Field 4] = sum_media.id
@@ -1886,216 +1904,6 @@ FROM XaxisETL.[dbo].[Extract_Spain] eb
 			  AND LTRIM(RTRIM([Field 1])) = 'Venta'
 	--		  AND sl.Id IS NULL
 
-
-
-
-
-
-
-CREATE PROCEDURE [dbo].[SpainNew_Sell_Lines_sp] AS
-
-
-
-WITH w_Account AS (
-SELECT DISTINCT [Field 11] +' - '+ ag.SF AS Name
-	  ,acct.Agency__c AS Agency__c
-	  ,acct.Id
---	  ,[Field 9] AS Agency_Name
-	  ,ag.SF AS Agency_Name
-	  ,acct.Advertiser__c AS Advertiser__c
-	  ,[Field 11] AS Advertiser_Name
-FROM XaxisETL.[dbo].[Extract_Spain] eb
-	LEFT JOIN (
-			SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
-			SELECT 'MEC' , 'MEC (Spain)'		UNION
-			SELECT 'MC BCN' , 'Mediacom (Spain)'	UNION
-			SELECT 'MC MAD' , 'Mediacom (Spain)'	UNION
-			SELECT 'MS' , 'Mindshare (Spain)'
-			) ag
-		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) = ag.Spain	
-	LEFT JOIN (SELECT acct.Id
-					  ,acct.Advertiser__c
-					  ,acct.Agency__c
-					  ,sf_ag.NAME AS Agency_Name
-					  ,sf_ad.NAME AS Advertiser_Name
-				FROM Account acct
-					INNER JOIN (SELECT ag.NAME
-									 ,ag.Id
-							   FROM Spain_Company ag
-							   WHERE ag.type__c = 'Agency'
-							   AND Market__c LIKE '%Spain%') sf_ag
-						ON acct.Agency__c = sf_ag.Id
-					INNER JOIN (SELECT ad.NAME
-									  ,ad.Id
-								FROM Spain_Company ad
-								WHERE ad.type__c = 'Advertiser') sf_ad
-						ON acct.Advertiser__c = sf_ad.Id
-				WHERE acct.Advertiser__c IS NOT NULL
-				  AND acct.Agency__c IS NOT NULL
-				  AND sf_ag.NAME IS NOT NULL
-				  AND sf_ad.NAME IS NOT NULL
-				  ) acct
-	ON acct.Advertiser_Name = eb.[Field 11]
-   AND acct.Agency_Name = ag.SF
-WHERE eb.[Field 11] IS NOT NULL
-  AND eb.[Field 11] <> 'Cliente'
- -- AND acct.id IS NULL
-  AND [Field 9] IS NOT NULL
-  AND [Field 11] IS NOT NULL
-  AND LTRIM(RTRIM([Field 9])) <> ''
-  AND LTRIM(RTRIM([Field 11])) <> ''
-  
-)
-, Adv_Count AS (
-	SELECT bc.id
-		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
-	FROM Spain_Company bc
-		LEFT JOIN Account ba
-			ON bc.Id = ba.Advertiser__c
-	WHERE bc.Type__c = 'Advertiser'
-	GROUP BY bc.Id)
-, Adv_Created AS (
-	SELECT bc.id
-		  ,bc.CreatedDate
-	FROM Company__c bc
-	WHERE bc.Type__c = 'Advertiser')
-,  Ag_Created AS (
-	SELECT bc.id
-		  ,bc.CreatedDate
-	FROM Company__c bc
-	WHERE bc.Type__c = 'Agency')
-, Acct_Count AS (
-	SELECT AccountId
-		  ,ISNULL(COUNT(Id), 0) AS account_count
-	FROM Opportunity
-	GROUP BY AccountId
-	)
-, with_rank AS (
-	SELECT DISTINCT wa.Name
-		  ,wa.Id
-		  ,sf_ad.id AS Advertiser__c
-		  ,sf_ag.id AS Agency__c
-		  ,'Xaxis' AS Business_Unit__c
-		  ,'Signed' AS Account_Opt_In_Status__c
-		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
-		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count, Adv_Created.CreatedDate, Ag_Created.CreatedDate) AS Ranky
-	FROM w_Account wa
-		INNER JOIN(
-				   SELECT ag.NAME
-						 ,ag.Id
-				   FROM Spain_Company ag
-				   WHERE ag.type__c = 'Agency'
-					 AND ag.Market__c LIKE '%Spain%'
-					 ) sf_ag
-			ON wa.Agency_Name = sf_ag.Name
-		INNER JOIN( 
-				   SELECT ad.NAME
-						,ad.Id
-				   FROM Spain_Company ad
-				   WHERE ad.type__c = 'Advertiser') sf_ad
-			ON wa.Advertiser_Name = sf_ad.Name
-		INNER JOIN Adv_Count
-			ON Adv_Count.Id = sf_ad.id
-		INNER JOIN Adv_Created
-			ON Adv_Created.Id = sf_ad.id
-		INNER JOIN Ag_Created
-			ON Ag_Created.Id = sf_ag.id
-		LEFT JOIN Acct_Count
-			ON Acct_Count.AccountId = wa.Advertiser__c
-
-	)
-, spain_acct AS (
-		SELECT Name
-			  ,Id
-			  ,Advertiser__c
-			  ,Agency__c
-			  ,Business_Unit__c
-			  ,Account_Opt_In_Status__c
-			  ,RecordTypeId
-		FROM with_rank
-		WHERE Ranky = 1
-				)
-		
-SELECT DISTINCT sf_opp.Id AS Opportunity__c
---	    ,sl.Id
-		,'SpainOpp-'+[Field 4] AS External_ID__c
-		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 13]))) AS Product_Detail__c
-		,CAST(CONVERT(DATE,eb.[Field 7],101) AS DATE) AS Start_Date__c
-		,CAST(CONVERT(DATE,eb.[Field 8],101) AS DATE) AS End_Date__c
---			  ,CONVERT(MONEY, REPLACE(eb.F24, ',','')) AS Gross_Cost__c
-		,dbo.ReplaceExtraChars(ISNULL(eb.[Field 23], '') + ' ' + ISNULL(
-eb.[Field 25], '')) AS Buy_Name_txt__c
-		,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
-		,'MediaTrader' AS	PackageType__c
-		,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Spain') AS RecordTypeId
-		,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = ''
-			THEN NULL
-			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11])))
-		END AS Supplier_Name__c
-		,CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars(eb.[Field 19]), ',','')) AS Buy_Volume__c
-		,CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars(eb.[Field 21]), ',','')) AS Gross_Cost__c
-		,CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars(eb.[Field 20]), ',','')) AS Rate__c
-		,ISNULL(sum_media.m_cost, 0) AS Media_Net_Cost__c
-		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 18]))) AS Buy_Type__c
-		,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22]))) = '' THEN 'Triggers'
-			WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22]))) IS NULL THEN 'Triggers'
-			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 22])))
-			END  AS Audience_Tier__c
-		,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(eb.[Field 27]), ',',''), '%',''))/100  AS Current_Margin__c
-		,'From spreadsheet: ' + eb.[Tag: Filename] AS Current_Margin_Explanation__c
---			  ,CASE WHEN LTRIM(RTRIM(eb.F28)) = '' THEN NULL ELSE LTRIM(RTRIM(eb.F28)) END AS Target_Gender__c
---			  ,CASE WHEN LTRIM(RTRIM(eb.F29)) = '' THEN NULL ELSE LTRIM(RTRIM(eb.F29)) END AS Target_Age__c
-		,CASE WHEN dbo.ReplaceExtraChars(LTRIM(RTRIM(CONCAT(ISNULL(eb.[Field 23], ''), ' ', ISNULL(eb.[Field 24], ''), ' ', ISNULL(eb.[Field 25], ''))))) = ''
-			THEN NULL
-			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(CONCAT(ISNULL(eb.[Field 23], ''), ' ', ISNULL(eb.[Field 24], ''), ' ', ISNULL(eb.[Field 25], '')))))
-		END AS Opp_Buy_Description__c
-		,'Externally Managed' AS Input_Mode__c
-		,dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 14]))) AS Formats__c
---			  ,CASE WHEN [Field 5] IS NULL THEN 'Speculative'
---					 WHEN [Field 5] LIKE 'Pendiente activación' THEN 'Contract Pending'
---					 WHEN [Field 5] LIKE 'Pendiente planificación' THEN 'Proposal Sent'
---					 ELSE 'Contacted / Prospecting'
---				END AS Sell_Line_Status__c
-FROM XaxisETL.[dbo].[Extract_Spain] eb
-	LEFT JOIN (
-			SELECT 'MX' AS [Spain], 'Maxus (Spain)' AS [SF] UNION
-			SELECT 'MEC' , 'MEC (Spain)'		UNION
-			SELECT 'MC BCN' , 'Mediacom (Spain)'	UNION
-			SELECT 'MC MAD' , 'Mediacom (Spain)'	UNION
-			SELECT 'MS' , 'Mindshare (Spain)'
-			) ag_c
-		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 9]))) = ag_c.Spain	
-	LEFT JOIN spain_acct acct
-		LEFT JOIN Company__c adv
-			ON acct.Advertiser__c = adv.Id
-		LEFT JOIN Company__c ag
-			ON acct.Agency__c = ag.Id
-		ON ag.Name = ag_c.SF 
-	    AND dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 11]))) = adv.Name
-		AND ag.Market__c = 'Spain'
-	LEFT JOIN Opportunity sf_opp
-		ON  dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 12]))) = sf_opp.Name
-		  OR 'NewSpainOpp-' +dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[Field 12]))) = sf_opp.Name
-	   AND sf_opp.AccountId = acct.Id
-			INNER JOIN (
-						SELECT [Field 4] AS id
-							  ,SUM(ISNULL(CONVERT(MONEY, REPLACE(dbo.ReplaceExtraChars([Field 21]), ',','')), 0)) AS m_cost
-						FROM XaxisETL.dbo.Extract_Spain
-						WHERE LTRIM(RTRIM([Field 1])) = 'Compra'
-						  AND LTRIM(RTRIM(REPLACE(dbo.ReplaceExtraChars([Field 21]), ',',''))) <> ''
-						GROUP BY [Field 4]
-						) sum_media
-				ON eb.[Field 4] = sum_media.id
-	LEFT JOIN Opportunity_Buy__c sl
-		ON 'SpainOpp-'+[Field 4]  = sl.External_Id__c
-WHERE  eb.[Field 11] IS NOT NULL
-	AND eb.[Field 11] <> 'Cliente'
-	AND [Field 9] IS NOT NULL
-	AND [Field 11] IS NOT NULL
-	AND LTRIM(RTRIM([Field 9])) <> ''
-	AND LTRIM(RTRIM([Field 11])) <> ''
-	AND LTRIM(RTRIM([Field 1])) = 'Venta'
-	AND sl.Id IS NULL
 
 
 
@@ -2292,4 +2100,535 @@ WHERE [Field 9] IS NOT NULL
   AND sf_opp.Id IS NULL
 
 
+
+CREATE PROCEDURE TurkeyUpdate_Sell_Line_sp AS
+
+
+IF OBJECT_ID('tempdb..#sql_sell_line') IS NOT NULL DROP TABLE #sql_sell_line;
+IF OBJECT_ID('tempdb..#sf_sell_line') IS NOT NULL DROP TABLE #sf_sell_line;
+
+IF OBJECT_ID('tempdb..#hash_sql') IS NOT NULL DROP TABLE #hash_sql;
+IF OBJECT_ID('tempdb..#hash_sf') IS NOT NULL DROP TABLE #hash_sf;
+
+CREATE TABLE #hash_sql(
+[Opportunity__c] [nvarchar](218) NULL,
+[External_Id__c] [nvarchar](222) NULL,
+[Product_Detail__c] [nvarchar](242) NULL,
+[Start_Date__c] [datetime] NULL,
+[End_Date__c] [datetime] NULL,
+[Buy_Name_txt__c] [nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c] [nvarchar](250) NULL,
+--[RecordTypeId] [nvarchar](218) NULL,
+[Supplier_Name__c] [nvarchar](218) NULL,
+[Buy_Volume__c] [float] NULL,
+[Gross_Cost__c] [float] NULL,
+[Rate__c] [float] NULL,
+[Media_Net_Cost__c] [float] NULL,
+[Buy_Type__c] [nvarchar](209) NULL,
+[Audience_Tier__c] [nvarchar](265) NULL,
+[Current_Margin__c] [float] NULL,
+[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+[Input_Mode__c] [nvarchar](224) NULL,
+[Media_Code__c] [nvarchar](215) NULL,
+[Formats__c] [nvarchar](264) NULL,
+[Id] [nvarchar](218) NULL,
+) ON [PRIMARY];
+
+CREATE TABLE #hash_sf(
+[Opportunity__c] [nvarchar](218) NULL,
+[External_Id__c] [nvarchar](222) NULL,
+[Product_Detail__c] [nvarchar](242) NULL,
+[Start_Date__c] [datetime] NULL,
+[End_Date__c] [datetime] NULL,
+[Buy_Name_txt__c] [nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c] [nvarchar](250) NULL,
+--[RecordTypeId] [nvarchar](218) NULL,
+[Supplier_Name__c] [nvarchar](218) NULL,
+[Buy_Volume__c] [float] NULL,
+[Gross_Cost__c] [float] NULL,
+[Rate__c] [float] NULL,
+[Media_Net_Cost__c] [float] NULL,
+[Buy_Type__c] [nvarchar](209) NULL,
+[Audience_Tier__c] [nvarchar](265) NULL,
+[Current_Margin__c] [float] NULL,
+[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+[Input_Mode__c] [nvarchar](224) NULL,
+[Media_Code__c] [nvarchar](215) NULL,
+[Formats__c] [nvarchar](264) NULL,
+[Id] [nvarchar](218) NULL,
+) ON [PRIMARY];
+
+INSERT INTO #hash_sql
+SELECT [Opportunity__c]
+		,[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,LOWER([Buy_Type__c]) AS Buy_Type__c
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+FROM Production.dbo.Turkey_Sell_Lines;
+
+INSERT INTO #hash_sf
+SELECT [Opportunity__c]
+		,[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,LOWER([Buy_Type__c]) AS Buy_Type__c
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+FROM Production.dbo.Opportunity_Buy__c;
+
+
+
+SELECT sq.[Opportunity__c]
+      ,sq.[External_ID__c]
+      ,sq.[Product_Detail__c]
+      ,sq.[Start_Date__c]
+      ,sq.[End_Date__c]
+      ,sq.[Buy_Name_txt__c]
+      ,sq.[Imputing_Margin_or_Net__c]
+      ,sq.[PackageType__c]
+--      ,sq.[RecordTypeId]
+      ,sq.[Supplier_Name__c]
+      ,sq.[Buy_Volume__c]
+      ,sq.[Gross_Cost__c]
+      ,sq.[Rate__c]
+      ,sq.[Media_Net_Cost__c]
+      ,sq.[Buy_Type__c]
+      ,sq.[Audience_Tier__c]
+      ,sq.[Current_Margin__c]
+      ,sq.[Current_Margin_Explanation__c]
+      ,sq.[Opp_Buy_Description__c]
+      ,sq.[Input_Mode__c]
+      ,sq.[Media_Code__c]
+
+      ,sq.[Formats__c]
+      ,sq.[Id]
+	  ,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #hash_sql bb WHERE bb.External_ID__c = sq.External_ID__c FOR XML RAW)) AS sq_hash
+INTO #sql_sell_line
+ FROM [Production].[dbo].[Turkey_Sell_Lines] sq
+WHERE sq.Id IS NOT NULL;
+
+SELECT  [Opportunity__c]
+		,sf_in.[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,[Buy_Type__c]
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+		,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #hash_sf cc WHERE cc.External_ID__c = sf_in.External_ID__c FOR XML RAW)) AS sf_hash
+INTO #sf_sell_line
+FROM [Production].[dbo].Opportunity_Buy__c sf_in
+	INNER JOIN (SELECT External_Id__c FROM Production.dbo.Turkey_Sell_Lines) sq
+		ON sf_in.External_Id__c = sq.External_ID__c
+
+
+
+SELECT   [Opportunity__c]
+		,[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,[Buy_Type__c]
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+FROM #sql_sell_line sq
+	LEFT JOIN ( SELECT sf_hash
+				FROM #sf_sell_line
+			   ) sf
+		ON sq.sq_hash = sf.sf_hash
+WHERE sf.sf_hash IS NULL
+
+
+
+/*
+SELECT *
+FROM #hash_sql
+UNION 
+SELECT #hash_sf.*
+FROM #hash_sf
+	INNER JOIN (SELECT External_Id__c FROM Production.dbo.Turkey_Sell_Lines) sq
+		ON #hash_sf.External_Id__c = sq.External_ID__c
+
+*/
+
+CREATE PROCEDURE [dbo].[SpainNew_Sell_Lines_sp] AS
+
+IF OBJECT_ID('tempdb..#temp_Spain_SL') IS NOT NULL DROP TABLE #temp_Spain_SL;
+
+CREATE TABLE #temp_Spain_SL(
+[Opportunity__c] [nvarchar](218) NULL,
+[Id] [nvarchar](218) NULL,
+[External_Id__c] [nvarchar](222) NULL,
+[Product_Detail__c] [nvarchar](242) NULL,
+[Start_Date__c] [datetime] NULL,
+[End_Date__c] [datetime] NULL,
+[Buy_Name_txt__c] [nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c] [nvarchar](250) NULL,
+[RecordTypeId] [nvarchar](218) NULL,
+[Supplier_Name__c] [nvarchar](218) NULL,
+[Buy_Volume__c] [float] NULL,
+[Gross_Cost__c] [float] NULL,
+[Rate__c] [float] NULL,
+[Media_Net_Cost__c] [float] NULL,
+[Buy_Type__c] [nvarchar](209) NULL,
+[Media_Code__c] [nvarchar](215) NULL,
+[Audience_Tier__c] [nvarchar](265) NULL,
+[Current_Margin__c] [float] NULL,
+[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+[Input_Mode__c] [nvarchar](224) NULL,
+[Formats__c] [nvarchar](264) NULL,
+) ON [PRIMARY];
+
+
+INSERT INTO #temp_Spain_SL
+EXECUTE [dbo].[Spain_Sell_Lines_sp];
+
+SELECT Opportunity__c
+	  ,External_ID__c
+	  ,Product_Detail__c
+	  ,Start_Date__c
+	  ,End_Date__c
+	  ,Buy_Name_txt__c
+	  ,Imputing_Margin_or_Net__c
+	  ,PackageType__c
+	  ,RecordTypeId
+	  ,Supplier_Name__c
+	  ,Buy_Volume__c
+	  ,Gross_Cost__c
+	  ,Rate__c
+	  ,Media_Net_Cost__c
+	  ,Buy_Type__c
+	  ,Media_Code__c
+	  ,Audience_Tier__c
+	  ,Current_Margin__c
+	  ,Current_Margin_Explanation__c
+	  ,Opp_Buy_Description__c
+	  ,Input_Mode__c
+	  ,Formats__c
+FROM #temp_Spain_SL
+WHERE Id IS NULL
+
+
+
+
+CREATE PROCEDURE [dbo].[SpainUpdate_Sell_Line_sp] AS
+
+
+IF OBJECT_ID('tempdb..#sql_sell_line') IS NOT NULL DROP TABLE #sql_sell_line;
+IF OBJECT_ID('tempdb..#sf_sell_line') IS NOT NULL DROP TABLE #sf_sell_line;
+
+IF OBJECT_ID('tempdb..#hash_sf_temp') IS NOT NULL DROP TABLE #hash_sf;
+IF OBJECT_ID('tempdb..#hash_sql') IS NOT NULL DROP TABLE #hash_sql;
+IF OBJECT_ID('tempdb..#hash_sf') IS NOT NULL DROP TABLE #hash_sf;
+
+CREATE TABLE #hash_sql_temp(
+	[Opportunity__c] [nvarchar](218) NULL,
+	[Id] [nvarchar](218) NULL,
+	[External_Id__c] [nvarchar](222) NULL,
+	[Product_Detail__c] [nvarchar](242) NULL,
+	[Start_Date__c] [datetime] NULL,
+	[End_Date__c] [datetime] NULL,
+	[Buy_Name_txt__c] [nvarchar](456) NULL,
+	[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+	[PackageType__c] [nvarchar](250) NULL,
+	[RecordTypeId] [nvarchar](218) NULL,
+	[Supplier_Name__c] [nvarchar](218) NULL,
+	[Buy_Volume__c] [float] NULL,
+	[Gross_Cost__c] [float] NULL,
+	[Rate__c] [float] NULL,
+	[Media_Net_Cost__c] [float] NULL,
+	[Buy_Type__c] [nvarchar](209) NULL,
+	[Media_Code__c] [nvarchar](215) NULL,
+	[Audience_Tier__c] [nvarchar](265) NULL,
+	[Current_Margin__c] [float] NULL,
+	[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+	[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+	[Input_Mode__c] [nvarchar](224) NULL,
+	[Formats__c] [nvarchar](264) NULL,
+) ON [PRIMARY];
+
+CREATE TABLE #hash_sql(
+	[Opportunity__c] [nvarchar](218) NULL,
+	[Id] [nvarchar](218) NULL,
+	[External_Id__c] [nvarchar](222) NULL,
+	[Product_Detail__c] [nvarchar](242) NULL,
+	[Start_Date__c] [datetime] NULL,
+	[End_Date__c] [datetime] NULL,
+	[Buy_Name_txt__c] [nvarchar](456) NULL,
+	[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+	[PackageType__c] [nvarchar](250) NULL,
+--	[RecordTypeId] [nvarchar](218) NULL,
+	[Supplier_Name__c] [nvarchar](218) NULL,
+	[Buy_Volume__c] [float] NULL,
+	[Gross_Cost__c] [float] NULL,
+	[Rate__c] [float] NULL,
+	[Media_Net_Cost__c] [float] NULL,
+	[Buy_Type__c] [nvarchar](209) NULL,
+	[Media_Code__c] [nvarchar](215) NULL,
+	[Audience_Tier__c] [nvarchar](265) NULL,
+	[Current_Margin__c] [float] NULL,
+	[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+	[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+	[Input_Mode__c] [nvarchar](224) NULL,
+	[Formats__c] [nvarchar](264) NULL,
+) ON [PRIMARY];
+
+
+CREATE TABLE #hash_sf(
+	[Opportunity__c]			[nvarchar](218) NULL,
+	[Id]						[nvarchar](218) NULL,
+	[External_Id__c]			[nvarchar](222) NULL,
+	[Product_Detail__c]			[nvarchar](242) NULL,
+	[Start_Date__c]				[datetime] NULL,
+	[End_Date__c]				[datetime] NULL,
+	[Buy_Name_txt__c]			[nvarchar](456) NULL,
+	[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+	[PackageType__c]			[nvarchar](250) NULL,
+	--[RecordTypeId]			[nvarchar](218) NULL,
+	[Supplier_Name__c]			[nvarchar](218) NULL,
+	[Buy_Volume__c]				[float] NULL,
+	[Gross_Cost__c]				[float] NULL,
+	[Rate__c]					[float] NULL,
+	[Media_Net_Cost__c]			[float] NULL,
+	[Buy_Type__c]				[nvarchar](209) NULL,
+	[Media_Code__c]				[nvarchar](215) NULL,
+	[Audience_Tier__c]			[nvarchar](265) NULL,
+	[Current_Margin__c]			[float] NULL,
+	[Current_Margin_Explanation__c] [nvarchar](267) NULL,
+	[Opp_Buy_Description__c]	[nvarchar](3924) NULL,
+	[Input_Mode__c]				[nvarchar](224) NULL,
+	[Formats__c]				[nvarchar](264) NULL,
+) ON [PRIMARY];
+
+INSERT INTO #hash_sql_temp
+EXECUTE [dbo].[Spain_Sell_Lines_sp];
+
+INSERT INTO #hash_sql
+SELECT [Opportunity__c]
+		,[Id]
+		,[External_Id__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]				
+		,[End_Date__c]		
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]		
+		--,[RecordTypeId],			
+		,[Supplier_Name__c]			
+		,[Buy_Volume__c]				
+		,[Gross_Cost__c]
+		,[Rate__c]		
+		,[Media_Net_Cost__c]
+		,LOWER([Buy_Type__c]) AS Buy_Type__c
+		,[Media_Code__c]			
+		,[Audience_Tier__c]			
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Formats__c]
+FROM #hash_sql_tem
+p;
+
+INSERT INTO #hash_sf
+SELECT [Opportunity__c]
+		,[Id]
+		,[External_Id__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]				
+		,[End_Date__c]		
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]		
+		--,[RecordTypeId],			
+		,[Supplier_Name__c]			
+		,[Buy_Volume__c]				
+		,[Gross_Cost__c]
+		,[Rate__c]		
+		,[Media_Net_Cost__c]
+		,LOWER([Buy_Type__c]) AS Buy_Type__c
+		,[Media_Code__c]			
+		,[Audience_Tier__c]			
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Formats__c]
+FROM Production.dbo.Opportunity_Buy__c;
+
+
+
+SELECT sq.[Opportunity__c]
+      ,sq.[External_ID__c]
+      ,sq.[Product_Detail__c]
+      ,sq.[Start_Date__c]
+      ,sq.[End_Date__c]
+      ,sq.[Buy_Name_txt__c]
+      ,sq.[Imputing_Margin_or_Net__c]
+      ,sq.[PackageType__c]
+--      ,sq.[RecordTypeId]
+      ,sq.[Supplier_Name__c]
+      ,sq.[Buy_Volume__c]
+      ,sq.[Gross_Cost__c]
+      ,sq.[Rate__c]
+      ,sq.[Media_Net_Cost__c]
+      ,sq.[Buy_Type__c]
+      ,sq.[Audience_Tier__c]
+      ,sq.[Current_Margin__c]
+      ,sq.[Current_Margin_Explanation__c]
+      ,sq.[Opp_Buy_Description__c]
+      ,sq.[Input_Mode__c]
+      ,sq.[Media_Code__c]
+      ,sq.[Formats__c]
+      ,sq.[Id]
+	  ,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #hash_sql bb WHERE bb.External_ID__c = sq.External_ID__c FOR XML RAW)) AS sq_hash
+INTO #sql_sell_line
+-- FROM [Production].[dbo].[Turkey_Sell_Lines] sq
+FROM #hash_sql sq
+WHERE sq.Id IS NOT NULL;
+
+SELECT  [Opportunity__c]
+		,sf_in.[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,[Buy_Type__c]
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+		,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #hash_sf cc WHERE cc.External_ID__c = sf_in.External_ID__c FOR XML RAW)) AS sf_hash
+INTO #sf_sell_line
+FROM [Production].[dbo].Opportunity_Buy__c sf_in
+--	INNER JOIN (SELECT External_Id__c FROM Production.dbo.Turkey_Sell_Lines) sq
+	INNER JOIN (SELECT External_Id__c FROM #hash_sql) sq
+		ON sf_in.External_Id__c = sq.External_ID__c
+
+
+
+SELECT   [Opportunity__c]
+		,[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Supplier_Name__c]
+		,[Buy_Volume__c]
+		,[Gross_Cost__c]
+		,[Rate__c]
+		,[Media_Net_Cost__c]
+		,[Buy_Type__c]
+		,[Audience_Tier__c]
+		,[Current_Margin__c]
+		,[Current_Margin_Explanation__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Formats__c]
+		,[Id]
+FROM #sql_sell_line sq
+	LEFT JOIN ( SELECT sf_hash
+				FROM #sf_sell_line
+			   ) sf
+		ON sq.sq_hash = sf.sf_hash
+WHERE sf.sf_hash IS NULL
+
+
+
+/*
+SELECT *
+FROM #hash_sql
+UNION 
+SELECT #hash_sf.*
+FROM #hash_sf
+	INNER JOIN (SELECT External_Id__c FROM Production.dbo.Turkey_Sell_Lines) sq
+		ON #hash_sf.External_Id__c = sq.External_ID__c
+
+*/
 

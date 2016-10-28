@@ -3761,14 +3761,14 @@ SELECT Name
 FROM with_rank
 WHERE Ranky = 1
 
-
-CREATE VIEW [dbo].[Turkey_Sell_Lines] AS
+CREATE VIEW dbo.Turkey_Sell_Lines AS
 
 SELECT opp.Id AS Opportunity__c
 --	  ,CONVERT(VARCHAR(1000), HashBytes('MD5', [Field 2] + [Field 13]), 2) AS External_ID__c
 --      ,CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) AS External_ID__c
 	  ,'TurkeyOpp-' + CAST(et.External_pk AS VARCHAR) AS External_ID__c
-	  ,dbo.ReplaceExtraChars([Field 15]) AS Product_Detail__c
+--	  ,dbo.ReplaceExtraChars([Field 15]) AS Product_Detail__c
+	  ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15]))  AS Product_Detail__c
       ,CAST(CONVERT(DATE,[Field 6],101) AS DATE) AS Start_Date__c
       ,CAST(CONVERT(DATE,[Field 7],101) AS DATE) AS End_Date__c
       ,dbo.ReplaceExtraChars([Field 2]) AS Buy_Name_txt__c
@@ -3786,7 +3786,8 @@ SELECT opp.Id AS Opportunity__c
       ,'From spreadsheet: ' + [Tag: Filename] AS Current_Margin_Explanation__c
       ,dbo.ReplaceExtraChars([Field 17]) AS Opp_Buy_Description__c
       ,'Externally Managed' AS Input_Mode__c
-	  ,'Digital' AS Media_Code__c
+--	  ,'Digital' AS Media_Code__c
+	  ,ISNULL(ch.sf_value, 'Digital') AS Media_Code__c
 	  ,dbo.ReplaceExtraChars([Field 18]) AS Formats__c
 	  ,sl.Id
 FROM XaxisETL.dbo.Extract_Turkey et
@@ -3796,13 +3797,31 @@ FROM XaxisETL.dbo.Extract_Turkey et
 		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(et.[Field 11]))) = opp.Name
 	   AND HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 2]), '') + ISNULL(dbo.ReplaceExtraChars([Field 13]), '') + ISNULL(dbo.ReplaceExtraChars([Field 16]), ''))
 		 = et.External_ID__c
-	LEFT JOIN dbo.Opportunity_Buy__c sl
+	LEFT JOIN (SELECT Id	
+				      ,External_Id__c
+			   FROM dbo.Opportunity_Buy__c) sl
 --		ON CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) = sl.External_Id__c
 		ON 'TurkeyOpp-' + CAST(et.External_pk AS VARCHAR) = sl.External_Id__c
+	LEFT JOIN (SELECT m_value
+					 ,sf_value
+			   FROM XaxisETL.dbo.SF_Mapping
+			   WHERE sf_market = 'Turkey'
+			     AND sf_type = 'Products'
+			   ) pro
+		ON LTRIM(RTRIM([Field 15])) = pro.m_value
+	LEFT JOIN (SELECT m_value
+					 ,sf_value
+			    FROM XaxisETL.dbo.SF_Mapping
+				WHERE sf_market = 'Turkey'
+				  AND sf_type = 'Channels'
+				) ch
+		ON LTRIM(RTRIM([Field 15])) = ch.m_value
 WHERE [Field 9] IS NOT NULL
   AND [Field 9] <> 'Agency'
   AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
   AND [Field 9] <> 'Campaign Details'
 --  AND sl.External_Id__c IS NULL   
+
+
 
 
