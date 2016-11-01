@@ -207,235 +207,14 @@ WHERE Ranky = 1
 
 
 
+
+
+
 CREATE PROCEDURE [dbo].[Nordics_Opp_sp] AS
 
-WITH sf_adv AS (
-				SELECT DISTINCT client_name_clean AS Name
-						,'Advertiser' AS Type__c
-						,'Active' AS Status__c
-				--	   , NULL AS Market__c
-						,sf.Id
-						,sf.Name_Full
-				--	   ,master.dbo.Levenshtein(dbo.ReplaceExtraChars([client name]),Name_full, DEFAULT) AS dis
-						,DENSE_RANK() OVER(PARTITION BY client_name_clean 
-											ORDER BY ISNULL(master.dbo.Levenshtein(client_name_clean
-																				, Name_full
-																				, DEFAULT)
-														,LEN(client_name_clean)), sf.Id) AS Ranky
-				FROM XaxisETL.dbo.Extract_Nordics en
-					LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) < 8 THEN Name
-												ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
-												END AS Name
-										, Id
-										,Name AS Name_Full
-								FROM GLStaging.dbo.Company__c
-								WHERE type__c = 'Advertiser') sf
-					ON CASE WHEN CHARINDEX(' ', client_name_clean) < 8 THEN client_name_clean
-									ELSE LEFT(client_name_clean,CHARINDEX(' ', client_name_clean) - 1)
-				--								   END LIKE '%' + REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
-									END LIKE REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
-					AND ISNULL( 1- (CAST(master.dbo.Levenshtein(client_name_clean
-																,Name_full
-																,DEFAULT) AS DECIMAL)
-								/LEN(client_name_clean)), 1) >= .2
-				WHERE client_name_clean IS NOT NULL
-				)
-, sf_ag AS (
-			SELECT DISTINCT dbo.ReplaceExtraChars(brand) AS Name
-					  ,'Agency' AS Type__c
-					  ,'Active' AS Status__c
-					  ,CASE WHEN [Client Country] = 'DK' Then 'Denmark'
-							WHEN [Client Country] = 'NO' Then 'Norway'
-							WHEN [Client Country] = 'SE' Then 'Sweden'
-						ELSE 'Nordic'END AS Market__c
-					  ,sf.Id
-					  ,sf.Name_full
-					  ,master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1) AS dis
-					  ,DENSE_RANK() OVER(PARTITION BY dbo.ReplaceExtraChars(brand), [Client Country] 
-									   ORDER BY ISNULL(master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1)
-													  ,LEN(dbo.ReplaceExtraChars(brand))), sf.Id) AS Ranky
-				FROM XaxisETL.dbo.Extract_Nordics en
-					LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) = 0 THEN Name
-													ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
-											   END AS Name
-									 ,Id
-									 ,Market__c
-									 ,Name AS Name_Full
-							   FROM GLStaging.dbo.Company__c 
-							   WHERE type__c = 'Agency'
-							   AND (Market__c LIKE '%Denmark%'
-								 OR Market__c LIKE '%Norway%'
-								 OR Market__c LIKE '%Sweden%'
-								 OR Market__c LIKE '%Nordic%')) sf
-						ON CASE WHEN CHARINDEX(' ', brand) = 0 THEN brand
-							ELSE LEFT(brand,CHARINDEX(' ', brand) - 1)
-						   END LIKE '%' + sf.Name + '%'
-						AND CASE WHEN [Client Country] = 'DK' Then 'Denmark'
-							WHEN [Client Country] = 'NO' Then 'Norway'
-							WHEN [Client Country] = 'SE' Then 'Sweden'
-							ELSE 'Nordic'END LIKE '%' + sf.Market__c + '%'
-				WHERE brand IS NOT NULL
-		   )
-
-, w_Account AS (
-				SELECT DISTINCT eb.client_name_clean +' - '+ dbo.ReplaceExtraChars(eb.brand) AS Name
-					  ,acct.Id
-					  ,acct.Agency__c AS Agency__c
-					  ,dbo.ReplaceExtraChars(eb.brand) AS Agency_Name
-					  ,acct.Advertiser__c AS Advertiser__c
-					  ,client_name_clean AS Advertiser_Name
-					  ,acct.ag_Ranky
-					  ,acct.adv_Ranky
-
---					  ,eb.OrderID
-					  ,eb.CampaignName
-					  ,eb.PlacementName
-					  ,eb.Unit
-					  ,eb.MediaName
-					  ,eb.BudgetNet 
-					  ,eb.[Client Name]
-					  ,eb.EndDate
-
-				FROM XaxisETL.[dbo].[Extract_Nordics] eb
-					LEFT JOIN (SELECT acct.Id
-									  ,acct.Advertiser__c
-									  ,acct.Agency__c
-									  ,sf_ag.NAME AS Agency_Name
-									  ,sf_adv.NAME AS Advertiser_Name
-									  ,sf_ag.Market__c
-									  ,sf_ag.Ranky AS ag_Ranky
-									  ,sf_adv.Ranky AS adv_Ranky
-		
-						FROM Account acct
-									INNER JOIN sf_ag
-										ON acct.Agency__c = sf_ag.Id
-									INNER JOIN sf_adv
-										ON acct.Advertiser__c = sf_adv.Id		   
-								WHERE acct.Advertiser__c IS NOT NULL
-								  AND acct.Agency__c IS NOT NULL
-								  AND sf_ag.NAME IS NOT NULL
-								  AND sf_adv.NAME IS NOT NULL
-								  ) acct
-						ON acct.Advertiser_Name = eb.client_name_clean
-					   AND acct.Agency_Name = dbo.ReplaceExtraChars(eb.brand)
-				WHERE  dbo.ReplaceExtraChars(eb.brand) IS NOT NULL
-				  AND eb.client_name_clean IS NOT NULL 
-				)
-, Adv_Count AS (
-	SELECT bc.id
-		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
-	FROM sf_adv bc
-		LEFT JOIN Account ba
-			ON bc.Id = ba.Advertiser__c
-	WHERE bc.Type__c = 'Advertiser'
-	  AND bc.Ranky = 1
-	GROUP BY bc.Id)
-, Adv_Created AS (
-	SELECT bc.id
-		  ,bc.CreatedDate
-	FROM Company__c bc
-	WHERE bc.Type__c = 'Advertiser')
-,  Ag_Created AS (
-	SELECT bc.id
-		  ,bc.CreatedDate
-	FROM Company__c bc
-	WHERE bc.Type__c = 'Agency')
-, with_rank AS (
-	SELECT DISTINCT 
-			CASE WHEN sf_ag.Market__c IS NULL THEN wa.Name + ' (Nordic)'
-				ELSE wa.Name + ' (' +sf_ag.Market__c + ')'
-		   END AS Name
-		  ,wa.Id
-		  ,sf_ad.id AS Advertiser__c
-		  ,sf_ag.id AS Agency__c
-		  ,'Xaxis' AS Business_Unit__c
-		  ,'Signed' AS Account_Opt_In_Status__c
-		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
-		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count DESC, Adv_Created.CreatedDate, Ag_Created.CreatedDate, wa.Id) AS Ranky
-		  ,wa.Agency__c AS Ag_Name
-		   ,wa.Advertiser__c AS Adv_Name
-		   ,wa.adv_Ranky
-		   ,wa.ag_Ranky
-		   ,wa.Advertiser_Name
---			,wa.OrderID
-			,wa.CampaignName
---			,wa.PlacementName
-			,wa.Unit
---			,wa.MediaName
---			,sum_net.sum_BudgetNet AS BudgetNet
-			,sum_net.EndDate AS EndDate
---			,wa.[Client Name]
-
-	FROM w_Account wa
-		INNER JOIN(
-				   SELECT ag.NAME
-						 ,ag.Id
-						 ,ag.Market__c
-				   FROM sf_ag ag
-				   WHERE ag.type__c = 'Agency'
-				     AND ag.Ranky = 1
-					 --AND ag.Market__c LIKE '%Nordic%'
-					 ) sf_ag
-			ON wa.Agency_Name = sf_ag.Name
-		INNER JOIN( 
-				   SELECT ad.NAME
-						,ad.Id
-				   FROM sf_adv ad
-				   WHERE ad.type__c = 'Advertiser'
-				     AND ad.Ranky = 1) sf_ad
-			ON wa.Advertiser_Name = sf_ad.Name
-		INNER JOIN Adv_Count
-			ON Adv_Count.Id = sf_ad.id
-		INNER JOIN Adv_Created
-			ON Adv_Created.Id = sf_ad.id
-		INNER JOIN Ag_Created
-			ON Ag_Created.Id = sf_ag.id
-		INNER JOIN (SELECT Id	
-						  ,CampaignName
-						  ,Advertiser__c
-						  ,Agency__c
-						  ,SUM(ISNULL(BudgetNet, 0)) AS sum_BudgetNet
-						  ,MAX(ISNULL(EndDate, '1900-01-01 00:00:00.0000000')) AS EndDate					  
-				    FROM w_Account
-					GROUP BY Id
-							,CampaignName
-							,Advertiser__c
-							,Agency__c
-					) sum_net
-			ON wa.Id = sum_net.Id
-		   AND wa.CampaignName = sum_net.CampaignName
-		   And wa.Advertiser__c = sum_net.Advertiser__c
-		   AND wa.Agency__c = sum_net.Agency__c					
-
-
---	WHERE wa.Agency__c     IS NULL
---	OR    wa.Advertiser__c IS NULL
-	)
-SELECT DISTINCT wr.Business_Unit__c
-	   ,wr.Advertiser__c
-	   ,wr.Agency__c
-	   ,wr.RecordTypeId
-	   ,wr.Id AS AccountId
-	   ,wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) AS Name
-	   ,CONVERT(DATE,ISNULL(EndDate, '1900-01-01 00:00:00.0000000'),102) AS CloseDate
-	   ,'Opportunity Closed Won' AS StageName	   
-FROM with_rank wr
-	LEFT JOIN Opportunity op
-		ON wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) = op.Name
-	   AND wr.Id = op.AccountId
-WHERE Ranky = 1
-  AND adv_Ranky = 1
-  AND ag_Ranky = 1
-  AND op.Id IS NULL
-
-
-
-
-
-
-
-
-CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
+IF OBJECT_ID('tempdb..#sf_adv') IS NOT NULL DROP TABLE #sf_adv;
+IF OBJECT_ID('tempdb..#sf_ag') IS NOT NULL DROP TABLE #sf_ag;
+IF OBJECT_ID('tempdb..#w_Account') IS NOT NULL DROP TABLE #w_Account;
 
 --WITH sf_adv AS (
 				SELECT DISTINCT client_name_clean AS Name
@@ -444,6 +223,7 @@ CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
 				--	   , NULL AS Market__c
 						,sf.Id
 						,sf.Name_Full
+						,en.DefaultCurrency
 				--	   ,master.dbo.Levenshtein(dbo.ReplaceExtraChars([client name]),Name_full, DEFAULT) AS dis
 						,DENSE_RANK() OVER(PARTITION BY client_name_clean 
 											ORDER BY ISNULL(master.dbo.Levenshtein(client_name_clean
@@ -468,6 +248,7 @@ CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
 																,DEFAULT) AS DECIMAL)
 								/LEN(client_name_clean)), 1) >= .2
 				WHERE client_name_clean IS NOT NULL
+				ORDER BY 1
 --				)
 --, sf_ag AS (
 			SELECT DISTINCT dbo.ReplaceExtraChars(brand) AS Name
@@ -516,7 +297,7 @@ CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
 					  ,client_name_clean AS Advertiser_Name
 					  ,acct.ag_Ranky
 					  ,acct.adv_Ranky
-
+					  ,acct.DefaultCurrency
 --					  ,eb.OrderID
 					  ,eb.CampaignName
 					  ,eb.PlacementName
@@ -525,7 +306,8 @@ CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
 					  ,eb.BudgetNet 
 					  ,eb.[Client Name]
 					  ,eb.EndDate
-					  ,eb.OrderID
+--					
+  ,eb.OrderID
 	--				  ,eb.BookingID
 				INTO #w_Account
 				FROM XaxisETL.[dbo].[Extract_Nordics] eb
@@ -533,11 +315,11 @@ CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
 									  ,acct.Advertiser__c
 									  ,acct.Agency__c
 									  ,sf_ag.NAME AS Agency_Name
-									  ,sf_adv.NAME AS Adverti
-ser_Name
+									  ,sf_adv.NAME AS Advertiser_Name
 									  ,sf_ag.Market__c
 									  ,sf_ag.Ranky AS ag_Ranky
 									  ,sf_adv.Ranky AS adv_Ranky
+									  ,sf_adv.DefaultCurrency
 								FROM Account acct
 									INNER JOIN #sf_ag sf_ag
 										ON acct.Agency__c = sf_ag.Id
@@ -550,6 +332,7 @@ ser_Name
 								  ) acct
 						ON acct.Advertiser_Name = eb.client_name_clean
 					   AND acct.Agency_Name = dbo.ReplaceExtraChars(eb.brand)
+					   AND acct.DefaultCurrency = eb.DefaultCurrency
 				WHERE  dbo.ReplaceExtraChars(eb.brand) IS NOT NULL
 				  AND eb.client_name_clean IS NOT NULL 
 --				)
@@ -579,15 +362,17 @@ WITH Adv_Count AS (
 			CASE WHEN sf_ag.Market__c IS NULL THEN wa.Name + ' (Nordic)'
 				ELSE wa.Name + ' (' +sf_ag.Market__c + ')'
 		   END AS Name
+		  ,wa.Agency_Name AS Ag_Name
 		  ,wa.Id
+		  ,wa.DefaultCurrency
 		  ,sf_ad.id AS Advertiser__c
 		  ,sf_ag.id AS Agency__c
 		  ,'Xaxis' AS Business_Unit__c
 		  ,'Signed' AS Account_Opt_In_Status__c
 		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Opportunity' AND DeveloperName = sf_ag.Market__c) AS RecordTypeId
 		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count DESC, Adv_Created.CreatedDate, Ag_Created.CreatedDate, wa.Id) AS Ranky
-		  ,wa.Agency__c AS Ag_Name
-		   ,wa.Advertiser__c AS Adv_Name
+--		  ,wa.Agency__c AS Ag_Name
+--		   ,wa.Advertiser__c AS Adv_Name
 		   ,wa.adv_Ranky
 		   ,wa.ag_Ranky
 		   ,wa.Advertiser_Name
@@ -599,7 +384,7 @@ WITH Adv_Count AS (
 --			,sum_net.sum_BudgetNet AS BudgetNet
 			,sum_net.EndDate AS EndDate
 --			,wa.[Client Name]
-			,wa.OrderID
+--			,wa.OrderID
 
 
 	FROM #w_Account wa
@@ -628,7 +413,7 @@ WITH Adv_Count AS (
 			ON Ag_Created.Id = sf_ag.id
 		INNER JOIN (SELECT Id	
 						  ,CampaignName
-						  ,OrderID
+--						  ,OrderID
 						  ,Advertiser__c
 						  ,Agency__c
 
@@ -639,14 +424,14 @@ WITH Adv_Count AS (
 							,CampaignName
 							,Advertiser__c
 							,Agency__c
-							,OrderID
+--							,OrderID
 
 					) sum_net
 			ON wa.Id = sum_net.Id
 		   AND wa.CampaignName = sum_net.CampaignName
 		   And wa.Advertiser__c = sum_net.Advertiser__c
 		   AND wa.Agency__c = sum_net.Agency__c		
-		   AND wa.OrderID = sum_net.OrderID		
+--		   AND wa.OrderID = sum_net.OrderID		
 
 
 --	WHERE wa.Agency__c     IS NULL
@@ -657,34 +442,91 @@ SELECT DISTINCT wr.Business_Unit__c
 	   ,wr.Agency__c
 	   ,wr.RecordTypeId
 	   ,wr.Id AS AccountId
-	   ,CASE WHEN LEN(wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) > 120
-				  AND LEN(dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) > 120
-			 THEN  ' OrderID:' +Cast(OrderID AS VARCHAR)
-			 WHEN LEN( wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) >120
-			 THEN  dbo.ReplaceExtraChars(CampaignName) + ' 
-OrderID:' +Cast(OrderID AS VARCHAR)
-			 ELSE  wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR) 
-		END AS Name
-	   ,CONVERT(DATE,ISNULL(EndDate, '1900-01-01 00:00:00.0000000'),102) AS CloseDate
-	   ,'Closed Won' AS StageName	   
-	   ,' OrderID:' +Cast(OrderID AS VARCHAR) AS External_Id__c
---	   ,op.Id
-FROM with_rank wr
-	LEFT JOIN Opportunity op
-		ON CASE WHEN LEN(wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) > 120
+	   ,wr.DefaultCurrency 
+AS CurrencyIsoCode
+/*	   ,CASE WHEN LEN(wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) > 120
 				  AND LEN(dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) > 120
 			 THEN  ' OrderID:' +Cast(OrderID AS VARCHAR)
 			 WHEN LEN( wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)) >120
 			 THEN  dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR)
 			 ELSE  wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' OrderID:' +Cast(OrderID AS VARCHAR) 
+		END AS Name
+*/
+	   ,CASE WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 ELSE dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+		END AS Name
+	   ,CONVERT(DATE,ISNULL(EndDate, '1900-01-01 00:00:00.0000000'),102) AS CloseDate
+	   ,'Closed Won' AS StageName	   
+--	   ,' OrderID:' +Cast(OrderID AS VARCHAR) AS External_Id__c
+	   ,op.Id
+FROM with_rank wr
+	INNER JOIN (SELECT wr2.Advertiser_Name + ' - ' + wr2.CampaignName AS Name
+					  ,COUNT(DISTINCT wr2.Advertiser_Name + ' - ' + wr2.CampaignName + ' - ' + wr2.Ag_Name) AS name_count
+				FROM with_rank wr2
+				GROUP BY wr2.Advertiser_Name + ' - ' + wr2.CampaignName
+				) cn
+		ON wr.Advertiser_Name + ' - ' + wr.CampaignName = cn.Name
+	LEFT JOIN Opportunity op
+		ON CASE WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 ELSE dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
 		END = op.Name
 	   AND wr.Id = op.AccountId
 WHERE Ranky = 1
   AND adv_Ranky = 1
   AND ag_Ranky = 1
-  AND op.Id IS NULL
+
+--  AND op.Id IS NULL
 
 
+
+
+
+
+CREATE PROCEDURE [dbo].[NordicsNew_Opp_sp] AS
+
+IF OBJECT_ID('tempdb..#temp_opp') IS NOT NULL DROP TABLE #temp_opp;
+
+CREATE TABLE #temp_opp(
+	[Business_Unit__c]			[nvarchar](218) NULL,
+	[Advertiser__c]				[nvarchar](218) NULL,
+	[Agency__c]					[nvarchar](222) NULL,
+	[RecordTypeId]				[nvarchar](242) NULL,
+	[AccountId]					[nvarchar](218) NULL,
+	[CurrencyIsoCode]			[nvarchar](10) NULL,
+	[Name]						[nvarchar](218) NULL,
+	[CloseDate]					[date] NULL,
+	[StageName]					[nvarchar](233) NULL,
+	[Id]						[nvarchar](250) NULL
+) ON [PRIMARY];
+
+INSERT INTO #temp_opp
+EXECUTE [dbo].Nordics_Opp_sp;
+
+SELECT [Business_Unit__c]	
+	   ,[Advertiser__c]		
+	   ,[Agency__c]			
+	   ,[RecordTypeId]		
+	   ,[AccountId]
+	   ,[CurrencyIsoCode]				
+	   ,[Name]		
+	   ,[CloseDate]			
+	   ,[StageName]					
+FROM #temp_opp
+WHERE Id IS NULL
 
 
 CREATE PROCEDURE [dbo].[Turkey_Opps_sp] AS
@@ -1047,6 +889,662 @@ WHERE Ranky = 1
   AND ag_Ranky = 1
   AND op.Id IS NULL
 
+
+
+
+
+
+CREATE PROCEDURE [dbo].[Nordics_Sell_Line_sp] AS
+
+IF OBJECT_ID('tempdb..#sf_adv') IS NOT NULL DROP TABLE #sf_adv;
+IF OBJECT_ID('tempdb..#sf_ag') IS NOT NULL DROP TABLE #sf_ag;
+IF OBJECT_ID('tempdb..#w_Account') IS NOT NULL DROP TABLE #w_Account;
+
+--WITH sf_adv AS (
+				SELECT DISTINCT client_name_clean AS Name
+						,'Advertiser' AS Type__c
+						,'Active' AS Status__c
+				--	   , NULL AS Market__c
+						,sf.Id
+						,sf.Name_Full
+						,en.DefaultCurrency
+				--	   ,master.dbo.Levenshtein(dbo.ReplaceExtraChars([client name]),Name_full, DEFAULT) AS dis
+						,DENSE_RANK() OVER(PARTITION BY client_name_clean 
+											ORDER BY ISNULL(master.dbo.Levenshtein(client_name_clean
+																				, Name_full
+																				, DEFAULT)
+														,LEN(client_name_clean)), sf.Id) AS Ranky
+				INTO #sf_adv
+				FROM XaxisETL.dbo.Extract_Nordics en
+					LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) < 8 THEN Name
+												ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
+												END AS Name
+										, Id
+										,Name AS Name_Full
+								FROM GLStaging.dbo.Company__c
+								WHERE type__c = 'Advertiser') sf
+					ON CASE WHEN CHARINDEX(' ', client_name_clean) < 8 THEN client_name_clean
+									ELSE LEFT(client_name_clean,CHARINDEX(' ', client_name_clean) - 1)
+				--								   END LIKE '%' + REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
+									END LIKE REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
+					AND ISNULL( 1- (CAST(master.dbo.Levenshtein(client_name_clean
+																,Name_full
+																,DEFAULT) AS DECIMAL)
+								/LEN(client_name_clean)), 1) >= .2
+				WHERE client_name_clean IS NOT NULL
+	
+--, sf_ag AS (
+			SELECT DISTINCT dbo.ReplaceExtraChars(brand) AS Name
+					  ,'Agency' AS Type__c
+					  ,'Active' AS Status__c
+					  ,CASE WHEN [Client Country] = 'DK' Then 'Denmark'
+							WHEN [Client Country] = 'NO' Then 'Norway'
+							WHEN [Client Country] = 'SE' Then 'Sweden'
+						ELSE 'Nordic'END AS Market__c
+					  ,sf.Id
+					  ,sf.Name_full
+					  ,master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1) AS dis
+					  ,DENSE_RANK() OVER(PARTITION BY dbo.ReplaceExtraChars(brand), [Client Country] 
+									   ORDER BY ISNULL(master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1)
+													  ,LEN(dbo.ReplaceExtraChars(brand))), sf.Id) AS Ranky
+				INTO #sf_ag
+				FROM XaxisETL.dbo.Extract_Nordics en
+					LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) = 0 THEN Name
+													ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
+											   END AS Name
+									 ,Id
+									 ,Market__c
+									 ,Name AS Name_Full
+							   FROM GLStaging.dbo.Company__c 
+							   WHERE type__c = 'Agency'
+							   AND (Market__c LIKE '%Denmark%'
+								 OR Market__c LIKE '%Norway%'
+								 OR Market__c LIKE '%Sweden%'
+								 OR Market__c LIKE '%Nordic%')) sf
+						ON CASE WHEN CHARINDEX(' ', brand) = 0 THEN brand
+							ELSE LEFT(brand,CHARINDEX(' ', brand) - 1)
+						   END LIKE '%' + sf.Name + '%'
+						AND CASE WHEN [Client Country] = 'DK' Then 'Denmark'
+							WHEN [Client Country] = 'NO' Then 'Norway'
+							WHEN [Client Country] = 'SE' Then 'Sweden'
+							ELSE 'Nordic'END LIKE '%' + sf.Market__c + '%'
+				WHERE brand IS NOT NULL
+		   
+
+--, w_Account AS (
+				SELECT DISTINCT eb.client_name_clean +' - '+ dbo.ReplaceExtraChars(eb.brand) AS Name
+					  ,acct.Id
+					  ,acct.Agency__c AS Agency__c
+					  ,dbo.ReplaceExtraChars(eb.brand) AS Agency_Name
+					  ,acct.Advertiser__c AS Advertiser__c
+					  ,client_name_clean AS Advertiser_Name
+					  ,acct.ag_Ranky
+					  ,acct.adv_Ranky
+					  ,acct.DefaultCurrency
+--					  ,eb.OrderID
+					  ,eb.CampaignName
+					  ,eb.PlacementName
+					  ,eb.Unit
+					  ,eb.MediaName
+					  ,eb.BudgetNet 
+					  ,eb.ActualsNet
+					  ,eb.[Client Name]
+					  ,eb.EndDate
+			
+		  ,eb.StartDate
+					  ,eb.OrderID
+--					  ,eb.BookingID
+				INTO #w_Account
+				FROM XaxisETL.[dbo].[Extract_Nordics] eb
+					LEFT JOIN (SELECT acct.Id
+									  ,acct.Advertiser__c
+									  ,acct.Agency__c
+									  ,sf_ag.NAME AS Agency_Name
+									  ,sf_adv.NAME AS Advertiser_Name
+									  ,sf_ag.Market__c
+									  ,sf_ag.Ranky AS ag_Ranky
+									  ,sf_adv.Ranky AS adv_Ranky
+									  ,sf_adv.DefaultCurrency
+								FROM Account acct
+									INNER JOIN #sf_ag sf_ag
+										ON acct.Agency__c = sf_ag.Id
+									INNER JOIN #sf_adv sf_adv
+										ON acct.Advertiser__c = sf_adv.Id		   
+								WHERE acct.Advertiser__c IS NOT NULL
+								  AND acct.Agency__c IS NOT NULL
+								  AND sf_ag.NAME IS NOT NULL
+								  AND sf_adv.NAME IS NOT NULL
+								  ) acct
+						ON acct.Advertiser_Name = eb.client_name_clean
+					   AND acct.Agency_Name = dbo.ReplaceExtraChars(eb.brand)
+					   AND acct.DefaultCurrency = eb.DefaultCurrency
+				WHERE  dbo.ReplaceExtraChars(eb.brand) IS NOT NULL
+				  AND eb.client_name_clean IS NOT NULL 
+
+;				
+WITH Adv_Count AS (
+	SELECT bc.id
+		  ,ISNULL(COUNT(ba.Id), 0) AS a_count
+	FROM #sf_adv bc
+		LEFT JOIN Account ba
+			ON bc.Id = ba.Advertiser__c
+	WHERE bc.Type__c = 'Advertiser'
+	  AND bc.Ranky = 1
+	GROUP BY bc.Id)
+, Adv_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Advertiser')
+,  Ag_Created AS (
+	SELECT bc.id
+		  ,bc.CreatedDate
+	FROM Company__c bc
+	WHERE bc.Type__c = 'Agency')
+, with_rank AS (
+	SELECT DISTINCT 
+			CASE WHEN sf_ag.Market__c IS NULL THEN wa.Name + ' (Nordic)'
+				ELSE wa.Name + ' (' +sf_ag.Market__c + ')'
+		   END AS Name
+		  ,wa.Id
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = sf_ag.Market__c) AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count DESC, Adv_Created.CreatedDate, Ag_Created.CreatedDate, wa.Id) AS Ranky
+		  ,wa.Agency_Name AS Ag_Name
+		   ,wa.Advertiser__c AS Adv_Name
+		   ,wa.adv_Ranky
+		   ,wa.ag_Ranky
+		   ,wa.Advertiser_Name
+--			,wa.OrderID
+			,wa.CampaignName
+--			,wa.PlacementName
+			,wa.Unit
+			,wa.MediaName
+--			,sum_net.sum_BudgetNet AS BudgetNet
+			,sum_net.sum_ActualNet AS ActualNet
+			,sum_net.EndDate AS EndDate
+			,sum_net.StartDate AS StartDate
+--			,wa.[Client Name]
+			,wa.OrderID
+--			,wa.BookingID
+		    ,place.PlacementName
+			,ISNULL(place.Ranky, 1) AS place_ranky
+
+	FROM #w_Account wa
+		INNER JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+						 ,ag.Market__c
+				   FROM #sf_ag ag
+				   WHERE ag.type__c = 'Agency'
+				     AND ag.Ranky = 1
+					 --AND ag.Market__c LIKE '%Nordic%'
+					 ) sf_ag
+			ON wa.Agency_Name = sf_ag.Name
+		INNER JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM #sf_adv ad
+				   WHERE ad.type__c = 'Advertiser'
+				     AND ad.Ranky = 1) sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+		INNER JOIN Adv_Count
+			ON Adv_Count.Id = sf_ad.id
+		INNER JOIN Adv_Created
+			ON Adv_Created.Id = sf_ad.id
+		INNER JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
+		INNER JOIN (SELECT Id	
+						  ,CampaignName
+						  ,OrderID
+						  ,Advertiser__c
+						  ,Agency__c
+--						  ,BookingID
+						  ,SUM(ISNULL(BudgetNet, 0)) AS sum_BudgetNet
+						  ,SUM(ISNULL(ActualsNet, 0)) AS sum_ActualNet
+						  ,MAX(ISNULL(EndDate,  '2020-01-01 00:00:00.0000000')) AS EndDate	
+						  ,MIN(ISNULL(StartDate,'1900-01-01 00:00:00.0000000')) AS StartDate				  
+				    FROM #w_Account
+					WHERE ActualsNet IS NOT NULL
+					GROUP BY Id
+							,CampaignName
+							,Advertiser__c
+							,Agency__c
+							,OrderID
+--							,BookingID
+					) sum_net
+			ON wa.Id = sum_net.Id
+		   AND wa.CampaignName = sum_net.CampaignName
+		   And wa.Advertiser__c = sum_net.Advertiser__
+c
+		   AND wa.Agency__c = sum_net.Agency__c		
+		   AND wa.OrderID = sum_net.OrderID		
+--		   AND wa.BookingID = sum_net.BookingID
+
+		LEFT JOIN (SELECT DISTINCT CampaignName
+						  ,PlacementName
+						  ,DENSE_RANK() OVER (PARTITION BY CampaignName ORDER BY LEN(PlacementName) DESC, OrderId) AS Ranky
+					FROM XaxisETL.[dbo].[Extract_Nordics] 
+					WHERE PlacementName IS NOT NULL
+					) place
+				ON wa.CampaignName = place.CampaignName
+--WHERE ISNULL(place.Ranky, 1) = 1
+			   
+		   
+
+
+--	WHERE wa.Agency__c     IS NULL
+--	OR    wa.Advertiser__c IS NULL
+	)
+
+, with_rank_org AS (
+	SELECT DISTINCT 
+			CASE WHEN sf_ag.Market__c IS NULL THEN wa.Name + ' (Nordic)'
+				ELSE wa.Name + ' (' +sf_ag.Market__c + ')'
+		   END AS Name
+		  ,wa.Agency_Name AS Ag_Name
+		  ,wa.Id
+		  ,wa.DefaultCurrency
+		  ,sf_ad.id AS Advertiser__c
+		  ,sf_ag.id AS Agency__c
+		  ,'Xaxis' AS Business_Unit__c
+		  ,'Signed' AS Account_Opt_In_Status__c
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Opportunity' AND DeveloperName = sf_ag.Market__c) AS RecordTypeId
+		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count DESC, Adv_Created.CreatedDate, Ag_Created.CreatedDate, wa.Id) AS Ranky
+--		  ,wa.Agency__c AS Ag_Name
+--		   ,wa.Advertiser__c AS Adv_Name
+		   ,wa.adv_Ranky
+		   ,wa.ag_Ranky
+		   ,wa.Advertiser_Name
+--			,wa.OrderID
+			,wa.CampaignName
+--			,wa.PlacementName
+			,wa.Unit
+--			,wa.MediaName
+--			,sum_net.sum_BudgetNet AS BudgetNet
+			,sum_net.EndDate AS EndDate
+--			,wa.[Client Name]
+--			,wa.OrderID
+
+
+	FROM #w_Account wa
+		INNER JOIN(
+				   SELECT ag.NAME
+						 ,ag.Id
+						 ,ag.Market__c
+				   FROM #sf_ag ag
+				   WHERE ag.type__c = 'Agency'
+				     AND ag.Ranky = 1
+					 --AND ag.Market__c LIKE '%Nordic%'
+					 ) sf_ag
+			ON wa.Agency_Name = sf_ag.Name
+		INNER JOIN( 
+				   SELECT ad.NAME
+						,ad.Id
+				   FROM #sf_adv ad
+				   WHERE ad.type__c = 'Advertiser'
+				     AND ad.Ranky = 1) sf_ad
+			ON wa.Advertiser_Name = sf_ad.Name
+		INNER JOIN Adv_Count
+			ON Adv_Count.Id = sf_ad.id
+		INNER JOIN Adv_Created
+			ON Adv_Created.Id = sf_ad.id
+		INNER JOIN Ag_Created
+			ON Ag_Created.Id = sf_ag.id
+		INNER JOIN (SELECT Id	
+						  ,CampaignName
+--						  ,OrderID
+						  ,Advertiser__c
+						  ,Agency__c
+
+						  ,SUM(ISNULL(BudgetNet, 0)) AS sum_BudgetNet
+						  ,MAX(ISNULL(EndDate, '1900-01-01 00:00:00.0000000')) AS EndDate					  
+				    FROM #w_Account w_Account
+					GROUP BY Id
+							,CampaignName
+							,Advertiser__c
+							,Agency__c
+--							,OrderID
+
+					) sum_net
+			ON wa.Id = sum_net.Id
+		   AND wa.CampaignName = sum_net.CampaignName
+		   And wa.Advertiser__c = sum_net.Advertiser__c
+		   AND wa.Agency__c = sum_net.Agency__c		
+--		   AND wa.OrderID = sum_net.OrderID		
+
+
+--	WHERE wa.Agency__c     IS NULL
+--	OR    wa.Advertiser__c IS NULL
+	)
+
+
+
+SELECT DISTINCT wr.RecordTypeId
+--	   ,wr.Id AS AccountId
+	   ,wr.ActualNet AS Gross_Cost__c
+/*	   ,CASE WHEN LEN(wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' BookingID:' +Cast(BookingID AS VARCHAR)) > 120
+				  AND LEN(dbo.ReplaceExtraChars(CampaignName) + ' BookingID:' +Cast(BookingID AS VARCHAR)) > 120
+			 THEN  ' BookingID:' +Cast(BookingID AS VARCHAR)
+			 WHEN LEN( wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' BookingID:' +Cast(BookingID AS VARCHAR)) >120
+			 THEN  dbo.ReplaceExtraChars(CampaignName) + ' BookingID:' +Cast(BookingID AS VARCHAR)
+			 ELSE  wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName) + ' BookingID:' +Cast(BookingID AS VARCHAR) 
+		END AS Name*/
+	   ,CONVERT(DATE,ISNULL(StartDate, '1900-01-01 00:00:00.0000000'),102) AS Start_Date__c
+	   ,CONVERT(DATE,ISNULL(EndDate, '1900-01-01 00:00:00.0000000'),102) AS End_Date__c
+	   ,MediaName AS Buy_Name_txt__c
+	   ,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
+	   ,'MediaTrader' AS PackageType__c
+	   ,CASE WHEN CHARINDEX
+('mobile', LOWER(MediaName))
+				 +CHARINDEX('mobil', LOWER(MediaName))
+				 +CHARINDEX('doubleclick', LOWER(MediaName))
+				 +CHARINDEX('adform', LOWER(MediaName)) > 0 THEN 'Xaxis Mobile'
+		     WHEN CHARINDEX('programmatic', LOWER(MediaName))
+				+CHARINDEX('tv', LOWER(MediaName))
+				+CHARINDEX('video', LOWER(MediaName)) > 0 THEN 'Xaxis TV'
+	    ELSE 'Xaxis Display' END AS product_detail__c
+
+	  ,CASE WHEN CHARINDEX('mobile', LOWER(MediaName))
+				 +CHARINDEX('mobil', LOWER(MediaName))
+				 +CHARINDEX('doubleclick', LOWER(MediaName))
+				 +CHARINDEX('adform', LOWER(MediaName)) > 0 THEN 'Mobile'
+		     WHEN CHARINDEX('programmatic', LOWER(MediaName))
+				+CHARINDEX('tv', LOWER(MediaName))
+				+CHARINDEX('video', LOWER(MediaName)) > 0 THEN 'Video'
+	    ELSE 'Display' END AS Media_Code__c
+
+--	   ,'Closed Won' AS StageName	   
+	   ,'NordicOrderID:' +Cast(OrderID AS VARCHAR) AS External_Id__c
+	   ,dbo.ReplaceExtraChars(wr.PlacementName) AS Opp_Buy_Description__c
+	   ,'Externally Managed' AS Input_Mode__c
+	   ,op.Id AS [Opportunity__c]
+	   ,sl.Id
+	   ,0.0 AS Media_Net_Cost__c
+	   ,'Triggers' AS Audience_Tier__c
+
+FROM with_rank wr
+	INNER JOIN (SELECT wr2.Advertiser_Name + ' - ' + wr2.CampaignName AS Name
+					  ,COUNT(DISTINCT wr2.Advertiser_Name + ' - ' + wr2.CampaignName + ' - ' + wr2.Ag_Name) AS name_count
+				FROM with_rank_org wr2
+				GROUP BY wr2.Advertiser_Name + ' - ' + wr2.CampaignName
+				) cn
+		ON wr.Advertiser_Name + ' - ' + wr.CampaignName = cn.Name
+	LEFT JOIN Opportunity op
+		ON CASE WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) > 120 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count > 1
+			 THEN dbo.ReplaceExtraChars(wr.Ag_Name) + ' - ' + dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 WHEN LEN(wr.Ag_Name + ' - ' + wr.Advertiser_Name + ' - ' + dbo.ReplaceExtraChars(CampaignName)) < 121 AND cn.name_count = 1
+			 THEN dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+			 ELSE dbo.ReplaceExtraChars(wr.Advertiser_Name) + ' - ' + dbo.ReplaceExtraChars(CampaignName)
+		END = op.Name
+	   AND wr.Id = op.AccountId
+	LEFT JOIN Opportunity_Buy__c sl
+		ON 'NordicOrderID:' +Cast(OrderID AS VARCHAR) = sl.External_Id__c
+WHERE Ranky = 1
+  AND adv_Ranky = 1
+  AND ag_Ranky = 1
+--  AND op.Id IS NULL
+  AND place_ranky = 1
+
+
+
+CREATE PROCEDURE [dbo].[NordicsNew_Sell_Lines_sp] AS
+
+IF OBJECT_ID('tempdb..#temp_Nordics_SL') IS NOT NULL DROP TABLE #temp_Nordics_SL;
+
+CREATE TABLE #temp_Nordics_SL(
+RecordTypeId [nvarchar](218) NULL,
+--AccountId [nvarchar](218) NULL,
+Gross_Cost__c [float] NULL,
+Start_Date__c [datetime] NULL,
+End_Date__c [datetime] NULL,
+Buy_Name_txt__c [nvarchar](218) NULL,
+Imputing_Margin_or_Net__c [nvarchar](218) NULL,
+PackageType__c [nvarchar](218) NULL,
+product_detail__c [nvarchar](218) NULL,
+Media_Code__c [nvarchar](218) NULL,
+--StageName [nvarchar](218) NULL,
+External_Id__c [nvarchar](218) NULL,
+Opp_Buy_Description__c [nvarchar](218) NULL,
+Input_Mode__c [nvarchar](218) NULL,
+[Opportunity__c] [nvarchar](218) NULL,
+Id [nvarchar](218) NULL,
+Media_Net_Cost__c [float] NULL,
+Audience_Tier__c [nvarchar](100) NULL
+) ON [PRIMARY];
+
+
+
+
+
+
+
+
+INSERT INTO #temp_Nordics_SL
+EXECUTE [dbo].[Nordics_Sell_Line_sp];
+
+SELECT  RecordTypeId 
+  --     ,AccountId 
+       ,Gross_Cost__c 
+       ,Start_Date__c 
+       ,End_Date__c 
+       ,Buy_Name_txt__c
+       ,Imputing_Margin_or_Net__c
+       ,PackageType__c
+       ,product_detail__c 
+       ,Media_Code__c 
+ --      ,StageName 
+       ,External_Id__c 
+       ,Opp_Buy_Description__c
+       ,Input_Mode__c 
+	   ,Opportunity__c    
+	   ,Media_Net_Cost__c
+	   ,Audience_Tier__c
+FROM #temp_Nordics_SL
+WHERE Id IS NULL
+
+
+
+
+CREATE PROCEDURE [dbo].[NordicsUpdate_Sell_Line_sp] AS
+
+
+IF OBJECT_ID('tempdb..#sql_sell_line') IS NOT NULL DROP TABLE #sql_sell_line;
+IF OBJECT_ID('tempdb..#sf_sell_line') IS NOT NULL DROP TABLE #sf_sell_line;
+
+IF OBJECT_ID('tempdb..#hash_sf_temp') IS NOT NULL DROP TABLE #hash_sf_temp;
+IF OBJECT_ID('tempdb..#hash_sql_temp') IS NOT NULL DROP TABLE #hash_sql_temp;
+IF OBJECT_ID('tempdb..#hash_sql') IS NOT NULL DROP TABLE #hash_sql;
+IF OBJECT_ID('tempdb..#hash_sf') IS NOT NULL DROP TABLE #hash_sf;
+
+CREATE TABLE #hash_sql_temp(
+[RecordTypeId] [nvarchar](218) NULL,
+[Gross_Cost__c] [float] NULL,
+[Start_Date__c] [datetime] NULL,
+[End_Date__c] [datetime] NULL,
+[Buy_Name_txt__c] [nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c] [nvarchar](250) NULL,
+[Product_Detail__c] [nvarchar](242) NULL,
+[Media_Code__c] [nvarchar](215) NULL,
+[External_Id__c] [nvarchar](222) NULL,
+[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+[Input_Mode__c] [nvarchar](224) NULL,
+[Opportunity__c] [nvarchar](218) NULL,
+[Id] [nvarchar](218) NULL,
+[Media_Net_Cost__c] [float] NULL,
+[Audience_Tier__c] [nvarchar](265) NULL
+) ON [PRIMARY];
+
+CREATE TABLE #hash_sql(
+--[RecordTypeId] [nvarchar](218) NULL,
+[Gross_Cost__c]				[float] NULL,
+[Start_Date__c]				[datetime] NULL,
+[End_Date__c]				[datetime] NULL,
+[Buy_Name_txt__c]			[nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c]			[nvarchar](250) NULL,
+[Product_Detail__c]			[nvarchar](242) NULL,
+[Media_Code__c]				[nvarchar](215) NULL,
+[External_Id__c]			[nvarchar](222) NULL,
+[Opp_Buy_Description__c]	[nvarchar](3924) NULL,
+[Input_Mode__c]				[nvarchar](224) NULL,
+[Opportunity__c]			[nvarchar](218) NULL,
+[Id]						[nvarchar](218) NULL,
+[Media_Net_Cost__c]			[float] NULL,
+[Audience_Tier__c]			[nvarchar](265) NULL
+) ON [PRIMARY];
+
+
+CREATE TABLE #hash_sf(
+--[RecordTypeId] [nvarchar](218) NULL,
+[Gross_Cost__c] [float] NULL,
+[Start_Date__c] [datetime] NULL,
+[End_Date__c] [datetime] NULL,
+[Buy_Name_txt__c] [nvarchar](456) NULL,
+[Imputing_Margin_or_Net__c] [nvarchar](233) NULL,
+[PackageType__c] [nvarchar](250) NULL,
+[Product_Detail__c] [nvarchar](242) NULL,
+[Media_Code__c] [nvarchar](215) NULL,
+[External_Id__c] [nvarchar](222) NULL,
+[Opp_Buy_Description__c] [nvarchar](3924) NULL,
+[Input_Mode__c] [nvarchar](224) NULL,
+[Opportunity__c] [nvarchar](218) NULL,
+[Id] [nvarchar](218) NULL,
+[Media_Net_Cost__c] [float] NULL,
+[Audience_Tier__c] [nvarchar](265) NULL
+) ON [PRIMARY];
+
+INSERT INTO #hash_sql_temp
+EXECUTE [dbo].[Nordics_Sell_Line_sp];
+
+INSERT INTO #hash_sql
+SELECT [Gross_Cost__c]				
+	  ,[Start_Date__c]				
+	  ,[End_Date__c]				
+	  ,[Buy_Name_txt__c]			
+	  ,[Imputing_Margin_or_Net__c] 
+	  ,[PackageType__c]			
+	  ,[Product_Detail__c]			
+	  ,[Media_Code__c]				
+	  ,[External_Id__c]			
+	  ,[Opp_Buy_Description__c]	
+	  ,[Input_Mode__c]				
+	  ,[Opportunity__c]			
+	  ,[Id]						
+	  ,[Media_Net_Cost__c]			
+	  ,[Audience_Tier__c]			
+FROM #hash_sql_temp;
+
+INSERT INTO #hash_sf
+SELECT [Gross_Cost__c]				
+	  ,[Start_Date__c]				
+	  ,[End_Date__c]				
+	  ,[Buy_Name_txt__c]			
+	  ,[Imputing_Margin_or_Net__c] 
+	  ,[PackageType__c]			
+	  ,[Product_Detail__c]			
+	  ,[Media_Code__c]				
+	  ,[External_Id__c]			
+	  ,[Opp_Buy_Description__c]	
+	  ,[Input_Mode__c]				
+	  ,[Opportunity__c]			
+	  ,[Id]						
+	  ,[Media_Net_Cost__c]			
+	  ,[Audience_Tier__c]			
+FROM Opportunity_Buy__c;
+
+
+
+SELECT sq.[Gross_Cost__c]				
+	   ,sq.[Start_Date__c]				
+	   ,sq.[End_Date__c]				
+	   ,sq.[Buy_Name_txt__c]			
+	   ,sq.[Imputing_Margin_or_Net__c] 
+	   ,sq.[PackageType__c]			
+	   ,sq.[Product_Detail__c]			
+	   ,sq.[Media_Code__c]				
+	   ,sq.[External_Id__c]			
+	   ,sq.[Opp_Buy_Description__c]	
+	   ,sq.[Input_Mode__c]				
+	   ,sq.[Opportunity__c]			
+	   ,sq.[Id]						
+	   ,sq.[Media_Net_Cost__c]			
+	   ,sq.[Audience_Tier__c]			
+	  ,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #h
+ash_sql bb WHERE bb.External_ID__c = sq.External_ID__c FOR XML RAW)) AS sq_hash
+INTO #sql_sell_line
+-- FROM [Production].[dbo].[Turkey_Sell_Lines] sq
+FROM #hash_sql sq
+WHERE sq.Id IS NOT NULL;
+
+SELECT [Gross_Cost__c]				
+	  ,[Start_Date__c]				
+	  ,[End_Date__c]				
+	  ,[Buy_Name_txt__c]			
+	  ,[Imputing_Margin_or_Net__c] 
+	  ,[PackageType__c]			
+	  ,[Product_Detail__c]			
+	  ,[Media_Code__c]				
+	  ,sf_in.[External_Id__c]			
+	  ,[Opp_Buy_Description__c]	
+	  ,[Input_Mode__c]				
+	  ,[Opportunity__c]			
+	  ,[Id]						
+	  ,[Media_Net_Cost__c]			
+	  ,[Audience_Tier__c]			
+	  ,HASHBYTES('SHA1', (SELECT TOP 1 * FROM #hash_sf cc WHERE cc.External_ID__c = sf_in.External_ID__c FOR XML RAW)) AS sf_hash
+INTO #sf_sell_line
+FROM Opportunity_Buy__c sf_in
+--	INNER JOIN (SELECT External_Id__c FROM Production.dbo.Turkey_Sell_Lines) sq
+	INNER JOIN (SELECT External_Id__c FROM #hash_sql) sq
+		ON sf_in.External_Id__c = sq.External_ID__c
+
+
+
+SELECT   [Opportunity__c]
+		,[External_ID__c]
+		,[Product_Detail__c]
+		,[Start_Date__c]
+		,[End_Date__c]
+		,[Buy_Name_txt__c]
+		,[Imputing_Margin_or_Net__c]
+		,[PackageType__c]
+--		,[RecordTypeId]
+		,[Gross_Cost__c]
+		,[Media_Net_Cost__c]
+		,[Audience_Tier__c]
+		,[Opp_Buy_Description__c]
+		,[Input_Mode__c]
+		,[Media_Code__c]
+		,[Id]
+FROM #sql_sell_line sq
+	LEFT JOIN ( SELECT sf_hash
+				FROM #sf_sell_line
+			   ) sf
+		ON sq.sq_hash = sf.sf_hash
+WHERE sf.sf_hash IS NULL
+
+
+
+/*
+
+SELECT *
+FROM #hash_sql
+UNION 
+SELECT #hash_sf.*
+FROM #hash_sf
+	INNER JOIN (SELECT External_Id__c FROM #hash_sql) sq
+		ON #hash_sf.External_Id__c = sq.External_ID__c
+
+*/
 
  
 -
