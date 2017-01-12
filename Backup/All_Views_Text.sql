@@ -51,83 +51,97 @@ WHERE eb.[F3] IS NOT NULL
 
 
 
-CREATE VIEW Extract_Turkey_LR AS
-SELECT [Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7] AS [Field 2]
-		,[Field 1] AS [Field 3]
-		,[Field 2] AS [Field 4]
-		,[Field 3] AS [Field 5]
-		,[Field 4] AS [Field 6]
-		,[Field 5] AS [Field 7]
-		,[Field 6] AS [Field 8]
-		,[Field 7] AS [Field 9]
-		,[Field 8] AS [Field 10]
-		,[Field 9] AS [Field 11]
-		,[Field 10] AS [Field 12]
-		,[Field 11] AS [Field 13]
-		,[Field 12] AS [Field 14]
-		,[Field 13] AS [Field 15]
-		,[Field 14] AS [Field 16]
-		,[Field 15] AS [Field 17]
-		,[Field 16] AS [Field 18]
-		,[Field 17] AS [Field 19]
-		,[Field 18] AS [Field 20]
-		,[Field 19] AS [Field 21]
-		,[Field 20] AS [Field 22]
-		,[Field 21] AS [Field 23]
-		,[Field 22] AS [Field 24]
-		,[Field 23] AS [Field 25]
-		,[Field 24] AS [Field 26]
-		,[Field 25] AS [Field 27]
-		,[Field 26] AS [Field 28]
-		,[Field 27] AS [Field 29]
-		,[Field 28] AS [Field 30]
-		,[Field 29] AS [Field 31]
-		,[Field 30] AS [Field 32]
-		,[Field 31] AS [Field 33]
-		,[Field 32] AS [Field 34]
-		,[Field 33] AS [Field 35]
-		,[Field 34] AS [Field 36]
-		,[Field 35] AS [Field 37]
-		,[Field 36] AS [Field 38]
-		,[Field 37] AS [Field 39]
-		,[Field 38] AS [Field 40]
-		,[Field 39] AS [Field 41]
-		,[Field 40] AS [Field 42]
-		,[Field 41] AS [Field 43]
-		,[Field 42] AS [Field 44]
-		,[Field 43] AS [Field 45]
-		,Title
-		,HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
-						 + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 3]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 4]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 16]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 17]), '')
-						 + ISNULL(dbo.ReplaceExtraChars([Field 19]), '')
-	  ) AS External_ID__c
-		,RANK() OVER (ORDER BY HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
-											   + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 3]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 4]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 16]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 17]), '')
-											   + ISNULL(dbo.ReplaceExtraChars([Field 19]), '')) ) 
-				AS External_pk
-  FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link]
+
+
+CREATE VIEW [dbo].[Extract_Spain] AS
+
+SELECT [Id]
+      ,[True_External_Link__c]
+      ,[ContentModifiedDate]
+      ,[ContentModifiedById]
+      ,[VersionNumber]
+      ,[Title]
+      ,[Username]
+      ,[LastName]
+      ,[FirstName]
+      ,[Email]
+      ,[Field 1]
+      ,[Field 2]
+      ,[Field 3]
+      ,[Field 4]
+      ,[Field 5]
+      ,[Field 6]
+      ,[Field 7]
+      ,REPLACE([Field 8], '31/11/2016', '11/30/2016') AS [Field 8]
+      ,[Field 9]
+      ,[Field 10]
+      ,[Field 11]
+      ,[Field 12]
+      ,[Field 13]
+      ,[Field 14]
+      ,[Field 15]
+      ,[Field 16]
+      ,[Field 17]
+      ,[Field 18]
+      ,[Field 19]
+      ,[Field 20]
+      ,[Field 21]
+      ,[Field 22]
+      ,[Field 23]
+      ,[Field 24]
+      ,[Field 25]
+      ,[Field 26]
+      ,[Field 27]
+      ,[Field 28]
+      ,[Field 29]
+      ,[Field 30]
+      ,[Field 31]
+      ,[Field 32]
+      ,[Field 33]
+      ,[Field 34]
+      ,[Field 35]
+      ,[Field 36]
+      ,[Field 37]
+      ,[Field 38]
+      ,[Field 39]
+      ,[Field 40]
+      ,[Field 41]
+      ,[Field 42]
+      ,[Field 43]
+      ,[Field 44]
+      ,[Field 45]
+      ,[Field 46]
+      ,[Field 47]
+      ,[Field 48]
+      ,[Field 49]
+      ,[Field 50]
+      ,[Field 51]
+      ,[Field 52]
+      ,[Field 53]
+      ,[Field 54]
+      ,[Field 55]
+      ,[Field 56]
+      ,[Field 57]
+      ,[Field 58]
+      ,[Field 59]
+      ,[Field 60]
+      ,[Field 61]
+      ,[Field 62]
+      ,[Row]
+  FROM [XaxisETL].[dbo].[Extract_Spain_Link]
 WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
-					   FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link])
+					   FROM [XaxisETL].[dbo].[Extract_Spain_Link])
   AND ContentModifiedDate = (SELECT MAX(ContentModifiedDate) AS ContentModifiedDate
-							 FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link])
-  AND [Field 9] IS NOT NULL
-  AND [Field 9] <> 'Agency'
-  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
-  AND [Field 9] <> 'Campaign Details'
+							 FROM [XaxisETL].[dbo].[Extract_Spain_Link])
 
-  
+  AND [Field 11] IS NOT NULL
+  AND [Field 11] <> 'Cliente'
+--  AND dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 11]))) <> ''
+  AND [Field 4] IS NOT NULL
 
- 
+
+
+
 
 
 
@@ -187,6 +201,7 @@ SELECT    [Field 1] AS [Field 2]
 													 + ISNULL(dbo.ReplaceExtraChars([Field 5]), '')
 													 + ISNULL(dbo.ReplaceExtraChars([Field 6]), '')) ) 
 				AS External_pk
+		,VersionNumber
   FROM [XaxisETL].[dbo].[Extract_Turkey_LinkTest]
 WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
 					   FROM [XaxisETL].[dbo].[Extract_Turkey_LinkTest])
@@ -197,6 +212,8 @@ WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
   AND [Field 8] <> 'Agency'
   AND [Field 8] <> 'Needs mapping to Turkish Agencies int the system'
   AND [Field 8] <> 'Campaign Details'
+
+
 
 
 
@@ -245,6 +262,7 @@ SELECT [Field 2]
       ,[External_ID__c]
       ,[External_pk]
 	  ,'Turkey_Non_LR' AS Filter 
+	  ,VersionNumber
   FROM [XaxisETL].[dbo].[Extract_Turkey_Non_LR]
 UNION ALL
 SELECT [Field 2]
@@ -288,7 +306,103 @@ SELECT [Field 2]
       ,[External_ID__c]
       ,[External_pk]
 	  ,'Turkey_LR' AS Filter
+	  ,VersionNumber
 FROM [XaxisETL].[dbo].[Extract_Turkey_LR]
+
+
+
+CREATE VIEW [dbo].[Extract_Turkey_LR] AS
+SELECT [Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7] AS [Field 2]
+		,[Field 1] AS [Field 3]
+		,[Field 2] AS [Field 4]
+		,[Field 3] AS [Field 5]
+		,[Field 4] AS [Field 6]
+		,[Field 5] AS [Field 7]
+		,[Field 6] AS [Field 8]
+		,[Field 7] AS [Field 9]
+		,[Field 8] AS [Field 10]
+		,[Field 9] AS [Field 11]
+		,[Field 10] AS [Field 12]
+		,[Field 11] AS [Field 13]
+		,[Field 12] AS [Field 14]
+		,[Field 13] AS [Field 15]
+		,[Field 14] AS [Field 16]
+		,[Field 15] AS [Field 17]
+		,[Field 16] AS [Field 18]
+		,[Field 17] AS [Field 19]
+		,[Field 18] AS [Field 20]
+		,[Field 19] AS [Field 21]
+		,[Field 20] AS [Field 22]
+		,[Field 21] AS [Field 23]
+		,[Field 22] AS [Field 24]
+		,[Field 23] AS [Field 25]
+		,[Field 24] AS [Field 26]
+		,[Field 25] AS [Field 27]
+		,[Field 26] AS [Field 28]
+		,[Field 27] AS [Field 29]
+		,[Field 28] AS [Field 30]
+		,[Field 29] AS [Field 31]
+		,[Field 30] AS [Field 32]
+		,[Field 31] AS [Field 33]
+		,[Field 32] AS [Field 34]
+		,[Field 33] AS [Field 35]
+		,[Field 34] AS [Field 36]
+		,[Field 35] AS [Field 37]
+		,[Field 36] AS [Field 38]
+		,[Field 37] AS [Field 39]
+		,[Field 38] AS [Field 40]
+		,[Field 39] AS [Field 41]
+		,[Field 40] AS [Field 42]
+		,[Field 41] AS [Field 43]
+		,[Field 42] AS [Field 44]
+		,[Field 43] AS [Field 45]
+		,Title
+		,HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
+						 + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 3]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 4]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 16]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 17]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 19]), '')
+	  ) AS External_ID__c
+		,ha.External_pk
+		
+/*		,  RANK() OVER (ORDER BY HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
+											   + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 3]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 4]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 16]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 17]), '')
+											   + ISNULL(dbo.ReplaceExtraChars([Field 19]), '')) ) 
+				AS External_pk
+*/
+	   ,VersionNumber
+  FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link] tu
+	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK_2 WHERE Filter = 'Turkey_LR') ha
+		ON HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
+						 + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 3]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 4]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 16]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 17]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 19]), '')
+	  ) = ha.External_ID__c
+WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
+					   FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link])
+  AND ContentModifiedDate = (SELECT MAX(ContentModifiedDate) AS ContentModifiedDate
+							 FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link])
+  AND [Field 9] IS NOT NULL
+  AND [Field 9] <> 'Agency'
+  AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 9] <> 'Campaign Details'
+
+  
+
+ 
+
 
 
 
@@ -3242,15 +3356,19 @@ SELECT DISTINCT com.Name AS Name
 	  ,'Agency' AS Type__c
 	  ,'Active' AS Status__c
 	  ,com.Market__c
+	  ,com.Name AS SF_Name
 	  ,com.Id
 FROM XaxisETL.[dbo].[Extract_Netherlands] en
 	LEFT JOIN (SELECT DISTINCT NAME, Id, Market__c
 			  FROM Company__c 
-			  WHERE type__c = 'Agency') com
-		ON REPLACE(REPLACE(REPLACE(en.[Field 3], 
-				'Xaxis Belgie',		'Xaxis Belgium'), 
-				'Mediabasics',		'MediaBasics (Netherlands)'), 
-				'Maxus-Helder',		'Maxus (Netherlands)') = com.Name
+			  WHERE type__c = 'Agency'
+			    AND Market__c = 'Netherlands') com
+		ON REPLACE(REPLACE(en.[Field 3], 
+				'Xaxis Belgie',		'Xaxis Direct Agency'), 
+				'Maxus-Helder',		'Maxus') 
+		 = REPLACE(REPLACE(com.Name, 
+				'(Netherlands)', ''),
+				'Nehterlands', '')
 WHERE [Field 3] IS NOT NULL
   AND [Field 3] <> '2'
   AND [Field 3] <> 'Agency'
@@ -3266,7 +3384,7 @@ SELECT DISTINCT REPLACE(REPLACE(REPLACE(master.dbo.InitCap(LOWER(dbo.ReplaceExtr
 	,'Advertiser' AS Type__c
 	,'Active' AS Status__c
 	,NULL AS Market__c
-	
+	,ISNULL(com2.Name, com.Name) AS SF_Name	
 	,ISNULL(com2.Id, com.Id) AS Id
 FROM XaxisETL.[dbo].[Extract_Netherlands] en
 	LEFT JOIN (SELECT DISTINCT NAME, Id
@@ -3292,6 +3410,10 @@ FROM XaxisETL.[dbo].[Extract_Netherlands] en
 WHERE [Field 3] IS NOT NULL
   AND [Field 3] <> '2'
   AND [Field 3] <> 'Agency'
+
+  
+
+
 
 
 
@@ -3378,30 +3500,37 @@ WHERE [Field 9] IS NOT NULL
 
 
 
+
+
 CREATE VIEW [dbo].[Netherlands_Accounts] AS
 
 WITH w_Account AS (
 SELECT DISTINCT [Field 5] +' - '+ ag.Name AS Name
-	  ,acct.Agency__c AS Agency__c
-	  ,acct.Id
+	  ,ISNULL(com2.Agency__c, acct.Agency__c) AS Agency__c
+	  ,ISNULL(com2.Id, acct.Id) AS Id
 --	  ,[Field 9] AS Agency_Name
 	  ,ag.Name AS Agency_Name
-	  ,acct.Advertiser__c AS Advertiser__c
-	  ,[Field 5] AS Advertiser_Name
+	  ,ISNULL(com2.Advertiser__c, acct.Advertiser__c) AS Advertiser__c
+--	  ,[Field 5] AS Advertiser_Name
+--	  ,ISNULL(com2.Advertiser_Name, acct.Advertiser_Name) AS Advertiser_Name
+	  ,n_com.SF_Name AS Advertiser_Name
 FROM XaxisETL.[dbo].Extract_Netherlands en
 	LEFT JOIN (SELECT DISTINCT NAME, Id, Market__c
 			  FROM Company__c 
-			  WHERE type__c = 'Agency') ag
-		ON REPLACE(REPLACE(REPLACE(en.[Field 3], 
-				'Xaxis Belgie',		'Xaxis Belgium'), 
-				'Mediabasics',		'MediaBasics (Netherlands)'), 
-				'Maxus-Helder',		'Maxus (Netherlands)') = ag.Name
+			  WHERE type__c = 'Agency'
+			    AND Market__c = 'Netherlands') ag
+		ON REPLACE(REPLACE(en.[Field 3], 
+				'Xaxis Belgie',		'Xaxis Direct Agency'), 
+				'Maxus-Helder',		'Maxus') 
+		 = REPLACE(REPLACE(ag.Name, 
+				'(Netherlands)', ''),
+				'Nehterlands', '')
 
 	LEFT JOIN (SELECT acct.Id
 					  ,acct.Advertiser__c
 					  ,acct.Agency__c
 					  ,sf_ag.NAME AS Agency_Name
-					  ,sf_ad.NAME AS Advertiser_Name
+					  ,sf_ad.SF_Name AS Advertiser_Name
 				FROM Account acct
 					INNER JOIN (SELECT ag.NAME
 									 ,ag.Id
@@ -3409,6 +3538,7 @@ FROM XaxisETL.[dbo].Extract_Netherlands en
 							   WHERE ag.type__c = 'Agency') sf_ag
 						ON acct.Agency__c = sf_ag.Id
 					INNER JOIN (SELECT ad.NAME
+									  ,ad.SF_Name
 									  ,ad.Id
 								FROM Netherlands_Company ad
 								WHERE ad.type__c = 'Advertiser') sf_ad
@@ -3417,6 +3547,7 @@ FROM XaxisETL.[dbo].Extract_Netherlands en
 				  AND acct.Agency__c IS NOT NULL
 				  AND sf_ag.NAME IS NOT NULL
 				  AND sf_ad.NAME IS NOT NULL
+				  AND acct.Business_Unit__c = 'Xaxis'
 				  ) acct
 	ON acct.Advertiser_Name = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(en.[Field 5], 
 								'B.V.',		''), 
@@ -3427,6 +3558,37 @@ FROM XaxisETL.[dbo].Extract_Netherlands en
 								'Tele 2', 'Tele2'),
 								',', '')
    AND acct.Agency_Name = ag.Name
+   LEFT JOIN Company__c com
+		ON acct.Advertiser__c = com.Id
+	LEFT JOIN Netherlands_Company n_com
+		ON n_com.Name = dbo.ReplaceExtraChars(en.[Field 5])
+	LEFT JOIN (SELECT acct.Id
+					  ,acct.Advertiser__c
+					  ,acct.Agency__c
+					  ,sf_ag.NAME AS Agency_Name
+					  ,sf_ad.Name AS Advertiser_Name
+				FROM Account acct
+					LEFT JOIN (SELECT ag.NAME
+									 ,ag.Id
+							   FROM Netherlands_Company ag
+							   WHERE ag.type__c = 'Agency') sf_ag
+						ON acct.Agency__c = sf_ag.Id
+					LEFT JOIN (SELECT ad.NAME
+									  ,ad.SF_Name
+									  ,ad.Id
+								FROM Netherlands_Company ad
+								WHERE ad.type__c = 'Advertiser') sf_ad
+						ON acct.Advertiser__c = sf_ad.Id
+				WHERE acct.Advertiser__c IS NOT NULL
+				  AND acct.Agency__c IS NOT NULL
+				  AND sf_ag.NAME IS NOT NULL
+				  AND sf_ad.NAME IS NOT NULL
+				  AND acct.Business_Unit__c = 'Xaxis') com2
+		ON CASE WHEN en.[Field 5] = 'Sky Radio' THEN 'Sky Radio B.V.' ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(en.[Field 5]))) END
+		  = com2.Advertiser_Name
+		AND com2.Agency_Name = ag.Name
+
+
 WHERE en.[Field 3] IS NOT NULL
   AND en.[Field 3] <> '2'
   AND en.[Field 3] <> 'Agency'
@@ -3457,13 +3619,15 @@ WHERE en.[Field 3] IS NOT NULL
 	GROUP BY AccountId
 	)
 , with_rank AS (
-	SELECT DISTINCT wa.Name
+	SELECT DISTINCT wa.Name AS Name2
+		  ,sf_ad.Name +' - '+ sf_ag.Name AS Name
 		  ,wa.Id
 		  ,sf_ad.id AS Advertiser__c
 		  ,sf_ag.id AS Agency__c
 		  ,'Xaxis' AS Business_Unit__c
 		  ,'Signed' AS Account_Opt_In_Status__c
-		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType = 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
+		  ,(SELECT TOP 1 [Id] FROM RecordType WHERE SobjectType =
+ 'Account' AND DeveloperName = 'Xaxis_Media_Buying_EMEA') AS RecordTypeId
 		  ,DENSE_RANK() OVER (PARTITION BY wa.Name ORDER BY Adv_Count.a_count, Adv_Created.CreatedDate, Ag_Created.CreatedDate) AS Ranky
 	FROM w_Account wa
 		INNER JOIN(
@@ -3471,11 +3635,10 @@ WHERE en.[Field 3] IS NOT NULL
 						 ,ag.Id
 				   FROM Netherlands_Company ag
 				   WHERE ag.type__c = 'Agency'
-					 AND ag.Market__c LIKE '%Spain%'
 					 ) sf_ag
 			ON wa.Agency_Name = sf_ag.Name
 		INNER JOIN( 
-				   SELECT ad.NAME
+				   SELECT ad.SF_Name AS Name
 						,ad.Id
 				   FROM Netherlands_Company ad
 				   WHERE ad.type__c = 'Advertiser') sf_ad
@@ -3492,7 +3655,8 @@ WHERE en.[Field 3] IS NOT NULL
 --	WHERE wa.Agency__c IS NULL
 --	OR wa.Advertiser__c IS NULL
 	)
-SELECT Name
+
+SELECT DISTINCT Name
 	  ,Id
 	  ,Advertiser__c
 	  ,Agency__c
@@ -3502,7 +3666,36 @@ SELECT Name
 FROM with_rank
 WHERE Ranky = 1
 
+--AND Id IS NOT NULL
 
+
+
+
+
+
+
+
+CREATE VIEW [dbo].[Netherlands_Opportunity] AS
+
+SELECT DISTINCT en.[Field 5]
+	  ,en.[Field 3]
+	  ,acct.Name
+FROM XaxisETL.dbo.Extract_Netherlands en
+	LEFT JOIN Account acct
+		INNER JOIN Company__c ag
+			ON acct.Agency__c = ag.Id
+		INNER JOIN Company__c ad
+			INNER JOIN Netherlands_Company ne_ad
+				ON ad.id = ne_ad.Id
+			ON acct.Advertiser__c = ne_ad.Id
+		ON en.[Field 5] = ne_ad.Name
+	   AND REPLACE(REPLACE(REPLACE(en.[Field 3], 
+				'Xaxis Belgie',		'Xaxis Belgium'), 
+				'Mediabasics',		'MediaBasics (Netherlands)'), 
+				'Maxus-Helder',		'Maxus (Netherlands)') = ag.Name
+WHERE en.[Field 3] IS NOT NULL
+  AND en.[Field 3] <> '2'
+  AND en.[Field 3] <> 'Agency'
 
 
 
@@ -3616,6 +3809,47 @@ WHERE Ranky = 1
 
 
 
+CREATE VIEW [dbo].[Nordics_Company_Advertiser] AS
+
+SELECT DISTINCT [client name] AS Name
+				,'Advertiser' AS Type__c
+			,'Active' AS Status__c
+--					, NULL AS Market__c
+			,sf.Id
+			,sf.Name_Full
+
+--					,master.dbo.Levenshtein(dbo.ReplaceExtraChars([client name]),Name_full, DEFAULT) AS dis
+
+			,DENSE_RANK() OVER(PARTITION BY [client name]
+						ORDER BY ISNULL(master.dbo.Levenshtein([client name],Name_full, DEFAULT)
+							            ,LEN([client name])), sf.Id) AS Ranky
+
+FROM (SELECT DISTINCT dbo.ReplaceExtraChars([client name]) AS [client name] From XaxisETL.dbo.Extract_Nordics) en
+	LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) < 8 THEN Name
+							ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
+						END AS Name
+						, Id
+						,Name AS Name_Full
+				FROM Company__c
+				WHERE Type__c = 'Advertiser') sf
+	ON CASE WHEN CHARINDEX(' ', [client name]) < 8 THEN [client name]
+					ELSE LEFT([client name],CHARINDEX(' ', [client name]) - 1)
+--								   END LIKE '%' + REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
+					END LIKE REPLACE(REPLACE(sf.Name,'[',''), ']', '') + '%'
+	AND ISNULL( 1- (CAST(master.dbo.Levenshtein([client name]
+			                                    ,Name_full
+												,DEFAULT) AS DECIMAL)
+				/LEN([client name])), 1) >= .2
+WHERE [client name] IS NOT NULL
+
+
+
+
+
+
+
+
+
 CREATE VIEW [dbo].[Turkey_Buy_Placement] AS
 
 SELECT CASE WHEN LEN(dbo.ReplaceExtraChars([Field 2]) + ' - ' + sl.External_Id__c) > 80
@@ -3662,6 +3896,32 @@ WHERE [Field 9] IS NOT NULL
 
 
 
+
+
+
+
+
+
+CREATE VIEW [dbo].[Nordics_Company] AS
+
+
+SELECT Name
+	  ,Type__c
+	  ,Status__c
+	  ,Market__c
+	  ,Id
+FROM Nordics_Company_Agency
+WHERE Ranky = 1
+
+UNION ALL 
+
+SELECT Name
+	  ,Type__c
+	  ,Status__c
+	  ,NULL AS Market__c
+	  ,Id
+FROM Nordics_Company_Advertiser
+WHERE Ranky = 1
 
 
 
@@ -3790,6 +4050,50 @@ WHERE Ranky = 1
 
 
 
+CREATE VIEW [dbo].[Nordics_Company_Agency] AS
+
+		SELECT DISTINCT ISNULL([Client Country] + ':' + dbo.ReplaceExtraChars(dup_n.Name), dbo.ReplaceExtraChars(brand)) AS Name
+			  ,'Agency' AS Type__c
+			  ,'Active' AS Status__c
+			  ,CASE WHEN [Client Country] = 'DK' Then 'Denmark'
+					WHEN [Client Country] = 'NO' Then 'Norway'
+					WHEN [Client Country] = 'SE' Then 'Sweden'
+				ELSE 'Nordic'END AS Market__c
+			  ,sf.Id
+			  ,sf.Name_full
+			  ,master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1) AS dis
+			  ,DENSE_RANK() OVER(PARTITION BY dbo.ReplaceExtraChars(brand), [Client Country] 
+							   ORDER BY ISNULL(master.dbo.Levenshtein(dbo.ReplaceExtraChars(brand),Name_full, LEN(dbo.ReplaceExtraChars(brand))-1)
+							                  ,LEN(dbo.ReplaceExtraChars(brand))), sf.Id) AS Ranky
+		FROM XaxisETL.dbo.Extract_Nordics en
+			LEFT JOIN (SELECT DISTINCT CASE WHEN CHARINDEX(' ', Name) = 0 THEN Name
+											ELSE LEFT(Name,CHARINDEX(' ', NAME) - 1) 
+									   END AS Name
+							 ,Id
+							 ,Market__c
+							 ,Name AS Name_Full
+					   FROM Company__c 
+					   WHERE type__c = 'Agency'
+					   AND (Market__c LIKE '%Denmark%'
+						 OR Market__c LIKE '%Norway%'
+						 OR Market__c LIKE '%Sweden%'
+						 OR Market__c LIKE '%Nordic%')) sf
+				ON CASE WHEN CHARINDEX(' ', brand) = 0 THEN brand
+					ELSE LEFT(brand,CHARINDEX(' ', brand) - 1)
+				   END LIKE '%' + REPLACE(sf.Name, [Client Country] + ':', '') + '%'
+				AND CASE WHEN [Client Country] = 'DK' Then 'Denmark'
+					WHEN [Client Country] = 'NO' Then 'Norway'
+					WHEN [Client Country] = 'SE' Then 'Sweden'
+					ELSE 'Nordic'END LIKE '%' + sf.Market__c + '%'
+			LEFT JOIN (SELECT DISTINCT Name FROM Company__c) dup_n
+				ON dbo.ReplaceExtraChars(en.Brand) = dup_n.Name
+		WHERE brand IS NOT NULL
+
+
+
+
+
+
 
 
 CREATE VIEW [dbo].[Beligum_Company] AS
@@ -3833,6 +4137,77 @@ WHERE eb.[F3] IS NOT NULL
 
 
 
+
+
+
+
+
+
+CREATE View [dbo].[Netherlands_Sell_Lines] AS
+--IF OBJECT_ID('tempdb..#temp_opp') IS NOT NULL DROP TABLE #temp_opp;
+--IF OBJECT_ID('tempdb..#temp_opp2') IS NOT NULL DROP TABLE #temp_opp2;
+
+			SELECT DISTINCT opp.Id AS Opportunity__c
+				  ,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Netherlands') AS RecordTypeId
+				  ,'Netherlands: ' + en.[Field 2] AS External_Id__c
+				  ,CAST(en.[Field 8] AS DATETIME) AS End_Date__c
+				  ,CAST(en.[Field 7] AS DATETIME) AS Start_Date__c
+				  ,dbo.ReplaceExtraChars(en.[Field 9]) AS Special_Product__c	
+				  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL(en.[Field 10], 0)), ',',''), '€', '')) AS Buy_Volume__c
+				  ,'CPM' AS Buy_Type__c
+				  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL(en.[Field 12], 0)), ',',''), '€', '')) AS Rate__c
+				  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL(en.[Field 13], 0)), ',',''), '€', '')) AS Gross_Cost__c
+				  ,CASE WHEN en.[Field 18] = 'None' THEN NULL ELSE en.[Field 18] END AS Target_Gender__c
+				  ,CASE WHEN REPLACE(REPLACE(en.[Field 19], 'Boodschappers met kind', ''), 'Boodschappers ', '') = ''
+						THEN NULL
+						ELSE REPLACE(REPLACE(en.[Field 19], 'Boodschappers met kind', ''), 'Boodschappers ', '')
+				   END AS Target_Age_Freeform_Entry__c
+				  ,CASE WHEN en.[Field 20] LIKE 'Contact%' THEN NULL
+						ELSE REPLACE(REPLACE(REPLACE(en.[Field 20], 'per campaign', ''), 'per week', ''), 'per 4 weken', '')
+						END AS Frequency_Cap__c
+				  ,CASE WHEN en.[Field 20] LIKE 'Contact%' THEN NULL
+						WHEN en.[Field 20] LIKE '%week%' THEN 'Per week'
+						WHEN en.[Field 20] LIKE '%per 4 weken%' THEN 'Per month'
+						WHEN en.[Field 20] IS NULL THEN NULL
+						ELSE 'Per campaign'
+				   END AS Frequency_Scope__c
+				  ,CASE WHEN LEN(ISNULL(ISNULL(en.[Field 24] +' : ' + en.[Field 22], ISNULL(en.[Field 24], en.[Field 22])), opp.Name)) > 255 THEN opp.Name
+						ELSE ISNULL(ISNULL(en.[Field 24] +' : ' + en.[Field 22], ISNULL(en.[Field 24], en.[Field 22])), opp.Name)
+				   END AS Buy_Name_txt__c
+				   ,CASE WHEN LEN(ISNULL(ISNULL(en.[Field 24] +' : ' + en.[Field 22], ISNULL(en.[Field 24], en.[Field 22])), opp.Name)) <= 255 THEN NULL
+						ELSE ISNULL(ISNULL(en.[Field 24] +' : ' + en.[Field 22], ISNULL(en.[Field 24], en.[Field 22])), opp.Name)
+				   END AS Opp_Buy_Description__c
+				  ,'Net Cost (Calc Margin)' Imputing_Margin_or_Net__c
+				  ,'Externally Managed' AS Input_Mode__c
+				  ,0 AS Media_Net_Cost__c
+--			INTO #temp_opp
+			FROM XaxisETL.dbo.Extract_Netherlands en
+				LEFT JOIN Account acct
+					INNER JOIN Company__c ag
+						ON acct.Agency__c = ag.Id
+					INNER JOIN Company__c ad
+						INNER JOIN Netherlands_Company ne_ad
+							ON ad.id = ne_ad.Id
+						ON acct.Advertiser__c = ne_ad.Id
+					ON en.[Field 5] = ne_ad.Name
+				   AND REPLACE(REPLACE(REPLACE(en.[Field 3], 
+							'Xaxis Belgie',		'Xaxis Belgium'), 
+							'Mediabasics',		'MediaBasics (Netherlands)'), 
+							'Maxus-Helder',		'Maxus (Netherlands)') = ag.Name
+				INNER JOIN Opportunity opp
+					ON ne_ad.Id = opp.Advertiser__c
+				   AND ag.Id = opp.Agency__c
+				   AND dbo.ReplaceExtraChars(en.[Field 6]) = REPLACE(opp.Name, 'Netherlands: ', '')
+			WHERE en.[Field 3] IS NOT NULL
+			  AND ISNULL(en.[Field 3], '') <> '2'
+			  AND ISNULL(en.[Field 3], '') <> 'Agency'
+			  AND en.[Field 4] IS NOT NULL
+			  AND acct.Business_Unit__c = 'Xaxis'
+					
+
+--SELECT DISTINCT Id 
+	  
+--FROM #temp_opp 
 
 
 

@@ -1,0 +1,8 @@
+Msg 3201, Level 16, State 1, Server NYCXAXESTEWART\SQLEXPRESS, Line 30
+Cannot open backup device '\\pscfpsp00106.ad.insidemedia.net\dfs\xax\users\eric.stewart\Projects-Backup\SQL_Server\XaxisETL_Jan_12_2017.BAK'. Operating system error 5(Access is denied.).
+Msg 3013, Level 16, State 1, Server NYCXAXESTEWART\SQLEXPRESS, Line 30
+BACKUP DATABASE is terminating abnormally.
+Msg 3201, Level 16, State 1, Server NYCXAXESTEWART\SQLEXPRESS, Line 30
+Cannot open backup device '\\pscfpsp00106.ad.insidemedia.net\dfs\xax\users\eric.stewart\Projects-Backup\SQL_Server\Production_Jan_12_2017.BAK'. Operating system error 5(Access is denied.).
+Msg 3013, Level 16, State 1, Server NYCXAXESTEWART\SQLEXPRESS, Line 30
+BACKUP DATABASE is terminating abnormally.
