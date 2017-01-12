@@ -47,4 +47,4 @@ Temporary Items
 .apdisk
 
 # SQL Backup files
-.BAK
+*.BAK
