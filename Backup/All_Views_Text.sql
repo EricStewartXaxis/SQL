@@ -143,6 +143,51 @@ WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
 
 
 
+CREATE VIEW [dbo].[Load_Needed] AS
+
+
+			SELECT cv.ContentDocumentId
+				  ,cv.Title	
+				  ,cv.ContentModifiedDate
+				  ,ISNULL(ll.VersionNumber, 0) AS Loaded_VersionNumber
+				  ,CASE WHEN cv.VersionNumber - ISNULL(ll.VersionNumber, 0) <> 0 THEN 'Yes' ELSE 'No' END AS Needs_Loading
+			FROM Production.dbo.ContentVersion cv
+				INNER JOIN (
+							SELECT ContentDocumentId
+								  ,MAX(VersionNumber) AS MaxVersionNumber
+							FROM Production.dbo.ContentVersion
+							WHERE Title LIKE ('Turkey%')
+							   OR Title LIKE ('Belgium%')
+							   OR Title LIKE ('Spain%')
+							   OR Title LIKE ('Netherlands%')
+							   OR Title LIKE ('Switzerland%')
+							GROUP BY ContentDocumentId
+							) mm
+					ON cv.ContentDocumentId = mm.ContentDocumentId
+				   AND cv.VersionNumber = mm.MaxVersionNumber
+				LEFT JOIN (
+							SELECT DISTINCT VersionNumber
+								  ,Title
+							FROM XaxisETL.dbo.Extract_Belgium
+							UNION ALL
+							SELECT DISTINCT VersionNumber
+								  ,Title
+							FROM XaxisETL.dbo.Extract_Spain
+							UNION ALL
+							SELECT DISTINCT VersionNumber
+								  ,Title
+							FROM XaxisETL.dbo.Extract_Turkey_Newest
+							UNION ALL
+							SELECT DISTINCT VersionNumber
+								  ,Title
+							FROM XaxisETL.dbo.Extract_Turkey_LR   
+							) ll
+					ON REPLACE(REPLACE(cv.Title, '-', ''), '|', '') = REPLACE(REPLACE(ll.Title, '-', ''), '|', '')
+			--ORDER BY cv.Title
+
+
+
+
 
 
 
@@ -220,6 +265,8 @@ WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
 
 
 
+
+
 CREATE VIEW [dbo].[Extract_Turkey] AS
 SELECT [Field 2]
       ,[Field 3]
@@ -258,12 +305,15 @@ SELECT [Field 2]
       ,[Field 36]
       ,[Field 37]
       ,[Field 38]
+	  ,isStartGrEnd
+	  ,isEndLeStart
       ,[Title]
       ,[External_ID__c]
       ,[External_pk]
 	  ,'Turkey_Non_LR' AS Filter 
 	  ,VersionNumber
-  FROM [XaxisETL].[dbo].[Extract_Turkey_Non_LR]
+	  ,Row
+	FROM XaxisETL.dbo.Extract_Turkey_Newest
 UNION ALL
 SELECT [Field 2]
       ,[Field 3]
@@ -302,12 +352,19 @@ SELECT [Field 2]
       ,[Field 36]
       ,[Field 37]
       ,[Field 38]
+	  ,isStartGrEnd
+	  ,isEndLeStart
       ,[Title]
       ,[External_ID__c]
       ,[External_pk]
 	  ,'Turkey_LR' AS Filter
 	  ,VersionNumber
+	  ,Row
 FROM [XaxisETL].[dbo].[Extract_Turkey_LR]
+
+
+
+
 
 
 
@@ -356,6 +413,8 @@ SELECT [Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7] AS
 		,[Field 41] AS [Field 43]
 		,[Field 42] AS [Field 44]
 		,[Field 43] AS [Field 45]
+		,NULL AS isStartGrEnd
+		,NULL AS isEndLeStart
 		,Title
 		,HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
 						 + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
@@ -379,8 +438,9 @@ SELECT [Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7] AS
 				AS External_pk
 */
 	   ,VersionNumber
+	   ,Row
   FROM [XaxisETL].[dbo].[Extract_Turkey_LR_Link] tu
-	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK_2 WHERE Filter = 'Turkey_LR') ha
+	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK WHERE Filter = 'Turkey_LR') ha
 		ON HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 8] + [Field 1] + [Field 2] + [Field 9] + [Field 11] + [Field 7]), '')
 						 + ISNULL(dbo.ReplaceExtraChars([Field 10]), '') 
 						 + ISNULL(dbo.ReplaceExtraChars([Field 13]), '')
@@ -407,6 +467,10 @@ WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
 
 
 
+
+
+
+
 CREATE VIEW [dbo].[Extract_Belgium] AS
 SELECT [True_External_Link__c]
       ,[ContentModifiedDate]
@@ -417,74 +481,67 @@ SELECT [True_External_Link__c]
       ,[LastName]
       ,[FirstName]
       ,[Email]
-      ,[Field 1] AS F2
-      ,dbo.ReplaceExtraChars([Field 2]) AS F3
-      ,[Field 3] AS F4
-      ,dbo.ReplaceExtraChars([Field 4]) AS F5
-      ,[Field 5] AS F6
-      ,[Field 6] AS F7
-      ,[Field 7] AS F8
-      ,[Field 8] AS F9
-      ,[Field 9] AS F10
-      ,[Field 10] AS F11
-      ,[Field 11] AS F12
-      ,[Field 12] AS F13
-      ,[Field 13] AS F14
-      ,[Field 14] AS F15
-      ,[Field 15] AS F16
-      ,[Field 16] AS F17
-      ,[Field 17] AS F18
-      ,[Field 18] AS F19
-      ,[Field 19] AS F20
-      ,[Field 20] AS F21
-      ,[Field 21] AS F22
-      ,[Field 22] AS F23
-      ,[Field 23] AS F24
-      ,[Field 24] AS F25
-      ,[Field 25] AS F26
-      ,[Field 26] AS F27
-      ,[Field 27] AS F28
-      ,[Field 28] AS F29
-      ,[Field 29] AS F30
-      ,[Field 30] AS F31
-      ,[Field 31] AS F32
-      ,[Field 32] AS F33
-      ,[Field 33] AS F34
-      ,[Field 34] AS F35
-      ,[Field 35] AS F36
-      ,[Field 36] AS F37
-      ,[Field 37] AS F38
-      ,[Field 38] AS F39
-      ,[Field 39] AS F40
-      ,[Field 40] AS F41
-      ,[Field 41] AS F42
-      ,[Field 42] AS F43
-      ,[Field 43] AS F44
-      ,[Field 44] AS F45
-      ,[Field 45] AS F46
-      ,[Field 46] AS F47
-      ,[Field 47] AS F48
-      ,[Field 48] AS F49
-      ,[Field 49] AS F50
-      ,[Field 50] AS F51
-      ,[Field 51] AS F52
-      ,[Field 52] AS F53
-      ,[Field 53] AS F54
-      ,[Field 54] AS F55
-      ,[Field 55] AS F56
-      ,[Field 56] AS F57
-
-      ,[Row] AS Id
-  FROM [Extract_Belgium_Link]
-  WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
-					   FROM [Extract_Belgium_Link])
-    AND ContentModifiedDate = (SELECT MAX(ContentModifiedDate) AS ContentModifiedDate
-							 FROM [Extract_Belgium_Link])
-	AND [Field 2] IS NOT NULL
-	AND [Field 4] IS NOT NULL
-	AND [Field 7] IS NOT NULL
-	AND dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 4]))) <> ''
-	AND Row > 8
+      ,F2
+      ,F3
+      ,F4
+      ,F5
+      ,F6
+      ,F7
+      ,F8
+      ,F9
+      ,F10
+      ,F11
+      ,F12
+      ,F13
+      ,F14
+      ,F15
+      ,F16
+      ,F17
+      ,F18
+      ,F19
+      ,F20
+      ,F21
+      ,F22
+      ,F23
+      ,F24
+      ,F25
+      ,F26
+      ,F27
+      ,F28
+      ,F29
+      ,F30
+      ,F31
+      ,F32
+      ,F33
+      ,F34
+      ,F35
+      ,F36
+      ,F37
+      ,F38
+      ,F39
+      ,F40
+      ,F41
+      ,F42
+      ,F43
+      ,F44
+      ,F45
+      ,F46
+      ,F47
+      ,F48
+      ,F49
+      ,F50
+      ,F51
+      ,F52
+      ,F53
+      ,F54
+      ,F55
+      ,F56
+      ,F57
+      ,Id AS Row
+	  ,Id
+  FROM Snapshot_Belgium
+  WHERE F2 <> '1'
+    AND F3 <> 'Agency'
 
 
 
@@ -3350,6 +3407,64 @@ WHERE Forecast_Quarter__c = 'Q3RF 2016'
 
 
 
+CREATE VIEW  [dbo].[Beligum_Opp] AS
+SELECT DISTINCT CASE WHEN F17 IS NULL THEN 'Speculative'
+					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'pending'		THEN 'Proposal'
+					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'signed'		THEN 'Closed Won'
+					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'signed+matos'	THEN 'Closed Won'
+					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'not agreed'	THEN 'Closed Lost'
+					 ELSE 'Contacted / Prospecting'
+				END AS StageName
+--	  ,CONVERT(VARCHAR(8), CONVERT(DATE,F8,3),3) AS CloseDate
+	  ,ISNULL(CONVERT(DATE,F8,3), '1900-01-01') AS CloseDate
+	  ,acct.Advertiser__c AS Advertiser__c
+	  ,acct.Agency__c AS Agency__c
+	  ,(SELECT TOP 1 [Id] FROM [RecordType] WHERE SobjectType = 'Opportunity' AND DeveloperName = 'Belgium') AS RecordTypeId
+	  ,acct.Id AS AccountId
+	  ,'Belgium:'+F2 AS External_Id__c
+	  ,CASE WHEN sf_opp.Id IS NOT NULL THEN sf_opp.Name
+			WHEN sf_opp_dup.Name IS NULL THEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6)))
+			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6)))
+		END AS 'Name'
+	  ,sf_opp.Id
+	  ,CASE WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'not agreed' THEN'Campaign not running' ELSE NULL END AS Reason_Lost__c   
+	  ,'EUR' AS CurrencyIsoCode
+	  ,CASE WHEN LEN(dbo.ReplaceExtraChars(eb.[F23])) > 30 THEN REPLACE(REPLACE(eb.[F23], 'PO', ''), ' ', '')
+			ELSE dbo.ReplaceExtraChars(eb.[F23])
+		END AS PO_Number__c
+
+FROM XaxisETL.[dbo].[Extract_Belgium] eb
+	LEFT JOIN Beligum_Accounts acct
+		LEFT JOIN Company__c adv
+			ON acct.Advertiser__c = adv.Id
+		LEFT JOIN (SELECT Id, Name FROM Company__c WHERE Market__c = 'Belgium') ag
+			ON acct.Agency__c = ag.Id
+		ON ag.Name LIKE '%' + dbo.ReplaceExtraChars(eb.F3) +'%'
+	    AND dbo.ReplaceExtraChars(eb.F5) = adv.Name
+	LEFT JOIN Opportunity sf_opp
+		ON 'Belgium:'+eb.F2 = sf_opp.External_Id__c
+--		  OR dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F6]))) = sf_opp.Name
+		  
+	   AND sf_opp.AccountId = acct.Id
+	LEFT JOIN (SELECT DISTINCT Name, External_Id__c
+			   FROM Opportunity) sf_opp_dup
+		ON dbo.ReplaceExtraChars(LTRIM(RTRIM([F6]))) = sf_opp_dup.Name
+	   AND 'Belgium:'+F2 <> ISNULL(sf_opp_dup.External_Id__c, 0)
+	LEFT JOIN (SELECT DISTINCT Name From Opportunity) opp
+		ON CASE WHEN sf_opp.Id IS NOT NULL THEN sf_opp.Name
+			WHEN sf_opp_dup.Name IS NULL THEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6)))
+			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6)))
+		END = opp.Name
+WHERE eb.id > 8
+  AND [F6] IS NOT NULL
+  AND dbo.ReplaceExtraChars(LTRIM(RTRIM([F6]))) <> ''
+--  AND sf_opp.Id IS NULL
+
+  --ORDER BY acct.Advertiser__c
+
+
+
+
 
 CREATE VIEW [dbo].[Netherlands_Company] AS
 SELECT DISTINCT com.Name AS Name
@@ -4873,69 +4988,6 @@ WHERE NL_line IS NOT NULL
 
 
 
-
-CREATE VIEW  [dbo].[Beligum_Opp] AS
-SELECT DISTINCT CASE WHEN F17 IS NULL THEN 'Speculative'
-					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'pending'		THEN 'Proposal'
-					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'signed'		THEN 'Closed Won'
-					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'signed+matos'	THEN 'Closed Won'
-					 WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'not agreed'	THEN 'Closed Lost'
-					 ELSE 'Contacted / Prospecting'
-				END AS StageName
---	  ,CONVERT(VARCHAR(8), CONVERT(DATE,F8,3),3) AS CloseDate
-	  ,ISNULL(CONVERT(DATE,F8,3), '1900-01-01') AS CloseDate
-	  ,acct.Advertiser__c AS Advertiser__c
-	  ,acct.Agency__c AS Agency__c
-	  ,(SELECT TOP 1 [Id] FROM [RecordType] WHERE SobjectType = 'Opportunity' AND DeveloperName = 'Belgium') AS RecordTypeId
-	  ,acct.Id AS AccountId
-	  ,'Belgium:'+F2 AS External_Id__c
-	  ,CASE WHEN sf_opp.Id IS NOT NULL THEN sf_opp.Name
-			WHEN sf_opp_dup.Name IS NULL THEN ISNULL('Belgium:' + dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6))), dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6))))
-			ELSE ISNULL('Belgium:' + dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6))), dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6))))
-		END AS 'Name'
-	  ,sf_opp.Id
-	  ,CASE WHEN LOWER(dbo.ReplaceExtraChars(LTRIM(RTRIM(F17)))) = 'not agreed' THEN'Campaign not running' ELSE NULL END AS Reason_Lost__c   
-	  ,'EUR' AS CurrencyIsoCode
-	  ,CASE WHEN LEN(dbo.ReplaceExtraChars(eb.[F23])) > 30 THEN REPLACE(REPLACE(eb.[F23], 'PO', ''), ' ', '')
-			ELSE dbo.ReplaceExtraChars(eb.[F23])
-		END AS PO_Number__c
-
-FROM XaxisETL.[dbo].[Extract_Belgium] eb
-	LEFT JOIN Beligum_Accounts acct
-		LEFT JOIN Company__c adv
-			ON acct.Advertiser__c = adv.Id
-		LEFT JOIN Company__c ag
-			ON acct.Agency__c = ag.Id
-		ON ag.Name LIKE '%' + dbo.ReplaceExtraChars(eb.F3) + '%(Belgium)%'
-	    AND dbo.ReplaceExtraChars(eb.F5) = adv.Name
-	LEFT JOIN Opportunity sf_opp
-		ON 'Belgium:'+eb.F2 = sf_opp.External_Id__c
---		  OR dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.[F6]))) = sf_opp.Name
-		  
-	   AND sf_opp.AccountId = acct.Id
-	LEFT JOIN (SELECT DISTINCT Name, External_Id__c
-			   FROM Opportunity) sf_opp_dup
-		ON dbo.ReplaceExtraChars(LTRIM(RTRIM([F6]))) = sf_opp_dup.Name
-	   AND 'Belgium:'+F2 <> ISNULL(sf_opp_dup.External_Id__c, 0)
-	LEFT JOIN (SELECT DISTINCT Name From Opportunity) opp
-		ON CASE WHEN sf_opp.Id IS NOT NULL THEN sf_opp.Name
-			WHEN sf_opp_dup.Name IS NULL THEN dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F6)))
-			ELSE dbo.ReplaceExtraChars(LTRIM(RTRIM(eb.F5 + ' - ' +eb.F6)))
-		END = opp.Name
-WHERE eb.id > 8
-  AND [F6] IS NOT NULL
-  AND dbo.ReplaceExtraChars(LTRIM(RTRIM([F6]))) <> ''
-  
-
-
-
-
-
-
-
-
-
-
 CREATE VIEW [dbo].[Turkey_Accounts] AS
 
 WITH w_Account AS (
@@ -5230,3 +5282,8 @@ UNPIVOT
 ) u
 WHERE Forecast__c <> 0
 
+ 
+-
+Utility
+text
+----

@@ -8,6 +8,1401 @@ text
 XaxisETL
 text
 ----
+
+CREATE PROCEDURE [dbo].[snapshot_belgium_sp] @RowCount INT OUTPUT, @VersionNumber INT OUTPUT AS
+
+BEGIN TRY 
+	SET NOCOUNT ON;
+	DROP TABLE [Snapshot_Belgium];
+
+	CREATE TABLE [dbo].[Snapshot_Belgium](
+		[True_External_Link__c] [nvarchar](409) NULL,
+		[ContentModifiedDate] [datetime] NULL,
+		[ContentModifiedById] [nvarchar](218) NULL,
+		[VersionNumber] [bigint] NULL,
+		[Title] [nvarchar](223) NULL,
+		[Username] [nvarchar](223) NULL,
+		[LastName] [nvarchar](205) NULL,
+		[FirstName] [nvarchar](206) NULL,
+		[Email] [nvarchar](223) NULL,
+		[F2] [nvarchar](208) NULL,
+		[F3] [varchar](100) NULL,
+		[F4] [nvarchar](222) NULL,
+		[F5] [varchar](100) NULL,
+		[F6] [nvarchar](262) NULL,
+		[F7] [nvarchar](209) NULL,
+		[F8] [nvarchar](208) NULL,
+		[F9] [nvarchar](210) NULL,
+		[F10] [nvarchar](213) NULL,
+		[F11] [nvarchar](212) NULL,
+		[F12] [nvarchar](211) NULL,
+		[F13] [nvarchar](210) NULL,
+		[F14] [nvarchar](209) NULL,
+		[F15] [nvarchar](209) NULL,
+		[F16] [nvarchar](203) NULL,
+		[F17] [nvarchar](213) NULL,
+		[F18] [nvarchar](208) NULL,
+		[F19] [nvarchar](208) NULL,
+		[F20] [nvarchar](212) NULL,
+		[F21] [nvarchar](207) NULL,
+		[F22] [nvarchar](212) NULL,
+		[F23] [nvarchar](238) NULL,
+		[F24] [nvarchar](206) NULL,
+		[F25] [nvarchar](206) NULL,
+		[F26] [nvarchar](211) NULL,
+		[F27] [nvarchar](214) NULL,
+		[F28] [nvarchar](223) NULL,
+		[F29] [nvarchar](206) NULL,
+		[F30] [nvarchar](241) NULL,
+		[F31] [nvarchar](249) NULL,
+		[F32] [nvarchar](237) NULL,
+		[F33] [nvarchar](249) NULL,
+		[F34] [nvarchar](234) NULL,
+		[F35] [nvarchar](217) NULL,
+		[F36] [nvarchar](215) NULL,
+		[F37] [nvarchar](228) NULL,
+		[F38] [nvarchar](242) NULL,
+		[F39] [nvarchar](445) NULL,
+		[F40] [nvarchar](210) NULL,
+		[F41] [nvarchar](213) NULL,
+		[F42] [nvarchar](213) NULL,
+		[F43] [nvarchar](212) NULL,
+		[F44] [nvarchar](208) NULL,
+		[F45] [nvarchar](201) NULL,
+		[F46] [nvarchar](201) NULL,
+		[F47] [nvarchar](201) NULL,
+		[F48] [nvarchar](201) NULL,
+		[F49] [nvarchar](201) NULL,
+		[F50] [nvarchar](201) NULL,
+		[F51] [nvarchar](201) NULL,
+		[F52] [nvarchar](201) NULL,
+		[F53] [nvarchar](201) NULL,
+		[F54] [nvarchar](209) NULL,
+		[F55] [nvarchar](209) NULL,
+		[F56] [nvarchar](215) NULL,
+		[F57] [nvarchar](215) NULL,
+		isStartGrEnd AS CASE WHEN ISDATE([F6]) = 1 AND ISDATE([F7]) = 1 AND 
+					  CAST(CONVERT(DATE,CAST( CAST([F6] AS VARCHAR) AS  DATE),120) AS DATE) > 
+					  CAST(CONVERT(DATE,CAST(CAST([F7] AS VARCHAR) AS DATE),120) AS DATE) 
+				 THEN 1
+				ELSE  0
+		 END,
+		isEndLeStart AS CASE  WHEN ISDATE([F6]) = 1 AND ISDATE([F7]) = 1 AND 
+					CAST(CONVERT(DATE,CAST(  CAST([F7] AS VARCHAR) AS   DATE),120) AS DATE) < 
+			 		CAST(CONVERT(DATE,CAST(CAST([F6] AS VARCHAR) AS DATE),120) AS DATE) 
+				 THEN 1
+				 ELSE 0
+		END,
+		[Id] [float] NULL,
+		[Row] INT 
+	) ON [PRIMARY];
+
+	INSERT INTO dbo.[Snapshot_Belgium](
+		 [True_External_Link__c]
+		,[ContentModifiedDate]
+		,[ContentModifiedById]
+		,[VersionNumber] 
+		,[Title] 
+		,[Username] 
+		,[LastName] 
+		,[FirstName]
+		,[Email]
+		,[F2] 
+		,[F3] 
+		,[F4] 
+		,[F5] 
+		,[F6] 
+		,[F7] 
+		,[F8] 
+		,[F9] 
+		,[F10]
+		,[F11]
+		,[F12]
+		,[F13]
+		,[F14]
+		,[F15]
+		,[F16]
+		,[F17]
+		,[F18]
+		,[F19]
+		,[F20]
+		,[F21]
+		,[F22]
+		,[F23]
+		,[F24]
+		,[F25]
+		,[F26]
+		,[F27]
+		,[F28]
+		,[F29]
+		,[F30]
+		,[F31]
+		,[F32]
+		,[F33]
+		,[F34]
+		,[F35]
+		,[F36]
+		,[F37]
+		,[F38]
+		,[F39]
+		,[F40]
+		,[F41]
+		,[F42]
+		,[F43]
+		,[F44]
+		,[F45]
+		,[F46]
+		,[F47]
+		,[F48]
+		,[F49]
+		,[F50]
+		,[F51]
+		,[F52]
+		,[F53]
+		,[F54]
+		,[F55]
+		,[F56]
+		,[F57]
+		,[Id] 
+		,[Row]
+		)
+	SELECT [True_External_Link__c]
+		  ,[ContentModifiedDate]
+		  ,[ContentModifiedById]
+		  ,[VersionNumber]
+		  ,[Title]
+		  ,[Username]
+		  ,[LastName]
+		  ,[FirstName]
+		  ,[Email]
+		  ,[Field 1] AS F2
+		  ,dbo.ReplaceExtraChars([Field 2]) AS F3
+		  ,[Field 3] AS F4
+		  ,dbo.ReplaceExtraChars([Field 4]) AS F5
+		  ,[Field 5
+] AS F6
+	--      ,[Field 6] AS F7
+		  ,CASE WHEN LEN([Field 6]) = 8 THEN CAST(CONVERT(DATETIME, '20' + RIGHT([Field 6], 2)+SUBSTRING([Field 6], 4,2)+LEFT([Field 6], 2)) AS VARCHAR) ELSE [Field 6] END AS F7
+	--      ,[Field 7] AS F8
+		  ,CASE WHEN LEN([Field 7]) = 8 THEN CAST(CONVERT(DATETIME, '20' + RIGHT([Field 7], 2)+SUBSTRING([Field 7], 4,2)+LEFT([Field 7], 2)) AS VARCHAR) ELSE [Field 7] END AS F8
+		  ,[Field 8] AS F9
+		  ,[Field 9] AS F10
+		  ,[Field 10] AS F11
+		  ,[Field 11] AS F12
+		  ,[Field 12] AS F13
+		  ,[Field 13] AS F14
+		  ,[Field 14] AS F15
+		  ,[Field 15] AS F16
+		  ,[Field 16] AS F17
+		  ,[Field 17] AS F18
+		  ,[Field 18] AS F19
+		  ,[Field 19] AS F20
+		  ,[Field 20] AS F21
+		  ,[Field 21] AS F22
+		  ,[Field 22] AS F23
+		  ,[Field 23] AS F24
+		  ,[Field 24] AS F25
+		  ,[Field 25] AS F26
+		  ,[Field 26] AS F27
+		  ,[Field 27] AS F28
+		  ,[Field 28] AS F29
+		  ,[Field 29] AS F30
+		  ,[Field 30] AS F31
+		  ,[Field 31] AS F32
+		  ,[Field 32] AS F33
+		  ,[Field 33] AS F34
+		  ,[Field 34] AS F35
+		  ,[Field 35] AS F36
+		  ,[Field 36] AS F37
+		  ,[Field 37] AS F38
+		  ,[Field 38] AS F39
+		  ,[Field 39] AS F40
+		  ,[Field 40] AS F41
+		  ,[Field 41] AS F42
+		  ,[Field 42] AS F43
+		  ,[Field 43] AS F44
+		  ,[Field 44] AS F45
+		  ,[Field 45] AS F46
+		  ,[Field 46] AS F47
+		  ,[Field 47] AS F48
+		  ,[Field 48] AS F49
+		  ,[Field 49] AS F50
+		  ,[Field 50] AS F51
+		  ,[Field 51] AS F52
+		  ,[Field 52] AS F53
+		  ,[Field 53] AS F54
+		  ,[Field 54] AS F55
+		  ,[Field 55] AS F56
+		  ,[Field 56] AS F57
+
+		  ,[Row] AS Id
+		  ,[Row]
+	  FROM [Extract_Belgium_Link]
+	  WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
+						   FROM [Extract_Belgium_Link])
+		AND ContentModifiedDate = (SELECT MAX(ContentModifiedDate) AS ContentModifiedDate
+								 FROM [Extract_Belgium_Link])
+		AND [Field 2] IS NOT NULL
+		AND [Field 4] IS NOT NULL
+		AND [Field 7] IS NOT NULL
+		AND dbo.ReplaceExtraChars(LTRIM(RTRIM([Field 4]))) <> ''
+
+		SET @RowCount=  @@ROWCOUNT;
+		SELECT TOP 1 @VersionNumber = VersionNumber FROM dbo.Snapshot_Belgium;
+		EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+
+END TRY
+BEGIN CATCH
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END CATCH
+
+CREATE PROCEDURE [dbo].[new_transfer_session_sp]
+    @extract_table_name  VARCHAR(50),
+	@transfer_session_id INT OUTPUT
+AS
+BEGIN TRY
+    SET NOCOUNT ON;
+
+	INSERT INTO XaxisETL.dbo.Transfer_Session(market_id, start_date, isNeedLoad)
+	SELECT mm.id
+		  ,GETDATE() AS start_date
+		  ,nn.Needs_Loading
+	FROM XaxisETL.dbo.Load_Needed nn
+		LEFT JOIN XaxisETL.dbo.Market mm
+			ON nn.ContentDocumentId = mm.sf_id
+	WHERE mm.extract_table_name = @extract_table_name;
+
+	SET @transfer_session_id = SCOPE_IDENTITY();	
+	
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name;
+
+	INSERT INTO Val_List(val_severity_id, replace_value_from)
+	VALUES (1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name); 
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+CREATE PROCEDURE val_check_sp(
+	 @extract_table_name VARCHAR(30)
+	,@transfer_session_id INT)
+AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @name VARCHAR(200)
+	DECLARE @proc VARCHAR(200)
+
+		DECLARE val_cur CURSOR LOCAL STATIC READ_ONLY FORWARD_ONLY FOR
+		SELECT sev.val_sp_name + ' ''' + def.excel_field_number + ''', ' + @extract_table_name + ', ' + CAST(@transfer_session_id AS VARCHAR) + ', ' + CAST(sev.id AS VARCHAR) + ' ' + ISNULL(', ''' +def.replace_value_default+'''', '')
+		FROM XaxisETL.dbo.Validation_Definition def
+			INNER JOIN XaxisETL.dbo.Val_Severity sev
+				ON def.val_sev_id = sev.id 
+		WHERE def.market_id = (SELECT id FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name)
+		ORDER BY def.val_order
+
+		OPEN val_cur
+		FETCH NEXT FROM val_cur INTO @name
+		WHILE @@FETCH_STATUS = 0
+
+		BEGIN TRY
+			SET @proc = @name 
+			EXEC(@proc)
+			FETCH NEXT FROM val_cur INTO @name
+
+		END TRY
+		BEGIN CATCH
+			DECLARE @msg1 VARCHAR(100);
+			SET @msg1 = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+			INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+			VALUES (@transfer_session_id, 1, @msg1) 
+			EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+										  ,@AdditionalInfo = @proc;
+			
+			FETCH NEXT FROM val_cur INTO @name
+		END CATCH
+
+	CLOSE val_cur
+	DEALLOCATE val_cur
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg2 VARCHAR(100);
+	SET @msg2 = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name;
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1, @msg2);
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg2;
+END CATCH
+
+
+
+
+CREATE PROCEDURE val_date_excel_sp(
+	 @excel_field_number VARCHAR(20)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET NOCOUNT ON;
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,'+ @excel_field_number +'
+			  ,dbo.ConvertExcelDate(ROUND('+ @excel_field_number +', 0))
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE ISNUMERIC('+ @excel_field_number +') = 1
+		'+ ISNULL(@where_c, '') +'
+	'
+	SET @update = N'
+		UPDATE '+ @extract_table_name +'
+		SET '+ @excel_field_number +' = dbo.ConvertExcelDate(ROUND('+ @excel_field_number +', 0))
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE ISNUMERIC('+ @excel_field_number +') = 1
+		'+ ISNULL(@where_c, '') +'
+	'   
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(MAX);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+CREATE PROCEDURE val_date_end_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+	DECLARE @first_s VARCHAR(50) = LTRIM(RTRIM(LEFT(@excel_field_number, CHARINDEX('&', @excel_field_number) - 1)))
+	DECLARE @second_s VARCHAR(50) = LTRIM(RTRIM(RIGHT(@excel_field_number, LEN(@excel_field_number) - CHARINDEX('&', @excel_field_number))))
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,'+ @first_s +'
+			  ,'+ @second_s +'
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE zz.[isEndLeStart] = 1
+		'+ ISNULL(@where_c, '') +'
+	'
+
+	SET @update = N'
+		UPDATE '+ @extract_table_name +'
+		SET '+ @first_s +' = ' + @second_s +'
+		   ,'+ @second_s +' = ' + @first_s +'
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE zz.[isEndLeStart] = 1
+		'+ ISNULL(@where_c, '') +'
+	'
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+
+CREATE PROCEDURE val_date_start_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+	DECLARE @first_s VARCHAR(50) = LTRIM(RTRIM(LEFT(@excel_field_number, CHARINDEX('&', @excel_field_number) - 1)))
+	DECLARE @second_s VARCHAR(50) = LTRIM(RTRIM(RIGHT(@excel_field_number, LEN(@excel_field_number) - CHARINDEX('&', @excel_field_number))))
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,'+ @first_s +'
+			  ,'+ @second_s +'
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE zz.[isStartGrEnd] = 1
+		'+ ISNULL(@where_c, '') +'
+	'
+	SET @update = N'
+		UPDATE '+ @extract_table_name +'
+		SET '+ @first_s +' = ' + @second_s +'
+		   ,'+ @second_s +' = ' + @first_s +'
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE zz.[isStartGrEnd] = 1
+		'+ ISNULL(@where_c, '') +'
+	'
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update);
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(MAX);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+
+CREATE PROCEDURE val_blank_turkey_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,NULL
+			  ,ISNULL(dbo.ReplaceExtraChars([Field 11]), dbo.ReplaceExtraChars(REPLACE([Field 2], ''_'' + [Field 13] + ''_'', '''')))
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE '+ @excel_field_number +' IS NULL
+		'+ ISNULL(@where_c, '') +'
+	'
+	SET @update = N'
+		UPDATE XaxisETL.dbo.'+ @extract_table_name + ' 
+		SET '+ @excel_field_number +' = ISNULL(dbo.ReplaceExtraChars([Field 11]), dbo.ReplaceExtraChars(REPLACE([Field 2], ''_'' + [Field 13] + ''_'', '''')))
+		WHERE '+ @excel_field_number +' IS NULL
+		'+ ISNULL(@where_c, '') +'
+	'
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+CREATE PROCEDURE val_non_numeric_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,'+ @excel_field_number +'
+			  ,dbo.StripNonNumerics('+ @excel_field_number +')
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE LEN(REPLACE(REPLACE(REPLACE('+ @excel_field_number +', ''%'',''''), '','',''''), ''TL'','''')) <> LEN(dbo.StripNonNumerics('+ @excel_field_number +'))
+		' + ISNULL(@where_c,'') +'
+	'
+	SET @update = N'
+		UPDATE XaxisETL.dbo.'+ @extract_table_name + '
+		SET '+ @excel_field_number +' = dbo.StripNonNumerics('+ @excel_field_number +')
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' 
+		WHERE LEN(REPLACE(REPLACE(REPLACE('+ @excel_field_number +', ''%'',''''), '','',''''), ''TL'','''')) <> LEN(dbo.StripNonNumerics('+ @excel_field_number +'))
+		' + ISNULL(@where_c,'') +'
+	'
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+
+
+CREATE PROCEDURE val_missing_column_sp(
+     @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql_test NVARCHAR(1000)
+	DECLARE @sql_value NVARCHAR(100) 
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+	DECLARE @result INT
+	DECLARE @column_name NVARCHAR(100)
+
+	SET @sql_test = N'
+			SELECT @result = COUNT(ISNULL('+ @excel_field_number +', 0)) 
+			FROM XaxisETL.dbo.'+ @extract_table_name + ' 
+			WHERE '+ @excel_field_number +' = 
+			(
+			SELECT excel_field_name
+			FROM XaxisETL.dbo.Validation_Definition
+			WHERE val_sev_id = '+ @val_severity_id +'
+			)
+			'
+	SET @sql_value = N'SELECT @column_name = excel_field_name FROM XaxisETL.dbo.Validation_Definition WHERE val_sev_id = '+ @val_severity_id +''
+	EXECUTE Sp_executesql @sql_test, N'@result INT OUTPUT', @result OUTPUT
+	EXECUTE Sp_executesql @sql_value, N'@column_name NVARCHAR(100) OUTPUT', @column_name OUTPUT
+
+	IF (SELECT @result) = 0
+	BEGIN 
+		SET @sql = N'
+			SELECT TOP 1 '+ @transfer_session_id +' AS transfer_session_id
+				  ,'+ @val_severity_id +' AS val_severity_id
+				  ,'''+ @column_name +'''
+				  ,NULL
+				  ,NULL
+			FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		'
+	
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+	END
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + @transfer_session_id + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+CREATE PROCEDURE val_blank_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)
+	,@replace_value_default VARCHAR(100) = NULL) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @delete NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,NULL
+			  ,NULL
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE '+ @excel_field_number +' IS NULL
+		'+ ISNULL(@where_c, '') +'
+	'
+	SET @delete = N'
+		DELETE FROM XaxisETL.dbo.'+ @extract_table_name + '
+		WHERE '+ @excel_field_number +' IS NULL
+		'+ ISNULL(@where_c, '') +'
+	'
+
+
+	
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC(@delete);
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + @transfer_session_id + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+CREATE PROCEDURE [dbo].[val_date_not_date_sp](
+	 @excel_field_number VARCHAR(20)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)) AS
+BEGIN TRY
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @delete NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET NOCOUNT ON;
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,'+ @excel_field_number +'
+			  ,NULL
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE ISDATE('+ @excel_field_number +') = 0
+		'+ ISNULL(@where_c, '') +'
+	'
+	SET @delete = N'
+		DELETE FROM XaxisETL.dbo.'+ @extract_table_name + '
+		WHERE ISDATE('+ @excel_field_number +') = 0
+		'+ ISNULL(@where_c, '') +'
+	'  
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@delete)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+
+END TRY
+BEGIN CATCH
+	DECLARE @msg VARCHAR(MAX);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+
+CREATE PROCEDURE val_blank_default_sp(
+	 @excel_field_number VARCHAR(50)
+	,@extract_table_name VARCHAR(30)
+	,@transfer_session_id VARCHAR(10)
+	,@val_severity_id VARCHAR(10)
+	,@replace_value_default VARCHAR(100) = NULL) AS
+BEGIN TRY
+	SET NOCOUNT ON;
+	DECLARE @sql NVARCHAR(1000)
+	DECLARE @update NVARCHAR(1000)
+	DECLARE @where_c NVARCHAR(1000)
+
+	--IF @replace_value_default IS NULL SET @replace_value_default = 'NULL';
+	IF @replace_value_default IS NULL RAISERROR(N'Default value is needed, can''t be NULL', 16, 1);
+
+	SET @where_c = 'AND ' + (SELECT TOP 1 where_clause FROM XaxisETL.dbo.Market WHERE extract_table_name = @extract_table_name);
+	SET @sql = N'
+		SELECT '+ @transfer_session_id +' AS transfer_session_id
+			  ,'+ @val_severity_id +' AS val_severity_id
+			  ,NULL AS replace_value_from
+			  ,'+ @replace_value_default +'
+			  ,zz.Row
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE '+ @excel_field_number +' IS NULL
+		 '+ ISNULL(@where_c, '') +'
+	'
+	print @sql
+	SET @update = N'
+		UPDATE XaxisETL.dbo.'+ @extract_table_name + '
+		SET '+ @excel_field_number +' = '+ @replace_value_default +'
+		FROM XaxisETL.dbo.'+ @extract_table_name + ' zz
+		WHERE '+ @excel_field_number +' IS NULL
+		 '+ ISNULL(@where_c, '') +'
+		 '
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from, replace_value_to,replace_row)
+	EXEC sp_executesql @sql 
+
+	EXEC (@update)
+
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID;
+END TRY
+
+BEGIN CATCH
+	DECLARE @msg VARCHAR(100);
+	SET @msg = 'Transfer Session ' + CAST(@transfer_session_id AS VARCHAR) + ' Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name
+
+	INSERT INTO Val_List(transfer_session_id, val_severity_id, replace_value_from)
+	VALUES (@transfer_session_id, 1,'Transfer Failed: ' + OBJECT_NAME(@@PROCID) +' with ' + @extract_table_name) 
+	EXEC utility.Log_ProcedureCall @ObjectID = @@PROCID
+								  ,@AdditionalInfo = @msg;
+END CATCH
+
+
+
+
+	CREATE PROCEDURE dbo.sp_upgraddiagrams
+	AS
+	BEGIN
+		IF OBJECT_ID(N'dbo.sysdiagrams') IS NOT NULL
+			return 0;
+	
+		CREATE TABLE dbo.sysdiagrams
+		(
+			name sysname NOT NULL,
+			principal_id int NOT NULL,	-- we may change it to varbinary(85)
+			diagram_id int PRIMARY KEY IDENTITY,
+			version int,
+	
+			definition varbinary(max)
+			CONSTRAINT UK_principal_name UNIQUE
+			(
+				principal_id,
+				name
+			)
+		);
+
+
+		/* Add this if we need to have some form of extended properties for diagrams */
+		/*
+		IF OBJECT_ID(N'dbo.sysdiagram_properties') IS NULL
+		BEGIN
+			CREATE TABLE dbo.sysdiagram_properties
+			(
+				diagram_id int,
+				name sysname,
+				value varbinary(max) NOT NULL
+			)
+		END
+		*/
+
+		IF OBJECT_ID(N'dbo.dtproperties') IS NOT NULL
+		begin
+			insert into dbo.sysdiagrams
+			(
+				[name],
+				[principal_id],
+				[version],
+				[definition]
+			)
+			select	 
+				convert(sysname, dgnm.[uvalue]),
+				DATABASE_PRINCIPAL_ID(N'dbo'),			-- will change to the sid of sa
+				0,							-- zero for old format, dgdef.[version],
+				dgdef.[lvalue]
+			from dbo.[dtproperties] dgnm
+				inner join dbo.[dtproperties] dggd on dggd.[property] = 'DtgSchemaGUID' and dggd.[objectid] = dgnm.[objectid]	
+				inner join dbo.[dtproperties] dgdef on dgdef.[property] = 'DtgSchemaDATA' and dgdef.[objectid] = dgnm.[objectid]
+				
+			where dgnm.[property] = 'DtgSchemaNAME' and dggd.[uvalue] like N'_EA3E6268-D998-11CE-9454-00AA00A3F36E_' 
+			return 2;
+		end
+		return 1;
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_helpdiagrams
+	(
+		@diagramname sysname = NULL,
+		@owner_id int = NULL
+	)
+	WITH EXECUTE AS N'dbo'
+	AS
+	BEGIN
+		DECLARE @user sysname
+		DECLARE @dboLogin bit
+		EXECUTE AS CALLER;
+			SET @user = USER_NAME();
+			SET @dboLogin = CONVERT(bit,IS_MEMBER('db_owner'));
+		REVERT;
+		SELECT
+			[Database] = DB_NAME(),
+			[Name] = name,
+			[ID] = diagram_id,
+			[Owner] = USER_NAME(principal_id),
+			[OwnerID] = principal_id
+		FROM
+			sysdiagrams
+		WHERE
+			(@dboLogin = 1 OR USER_NAME(principal_id) = @user) AND
+			(@diagramname IS NULL OR name = @diagramname) AND
+			(@owner_id IS NULL OR principal_id = @owner_id)
+		ORDER BY
+			4, 5, 1
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_helpdiagramdefinition
+	(
+		@diagramname 	sysname,
+		@owner_id	int	= null 		
+	)
+	WITH EXECUTE AS N'dbo'
+	AS
+	BEGIN
+		set nocount on
+
+		declare @theId 		int
+		declare @IsDbo 		int
+		declare @DiagId		int
+		declare @UIDFound	int
+	
+		if(@diagramname is null)
+		begin
+			RAISERROR (N'E_INVALIDARG', 16, 1);
+			return -1
+		end
+	
+		execute as caller;
+		select @theId = DATABASE_PRINCIPAL_ID();
+		select @IsDbo = IS_MEMBER(N'db_owner');
+		if(@owner_id is null)
+			select @owner_id = @theId;
+		revert; 
+	
+		select @DiagId = diagram_id, @UIDFound = principal_id from dbo.sysdiagrams where principal_id = @owner_id and name = @diagramname;
+		if(@DiagId IS NULL or (@IsDbo = 0 and @UIDFound <> @theId ))
+		begin
+			RAISERROR ('Diagram does not exist or you do not have permission.', 16, 1);
+			return -3
+		end
+
+		select version, definition FROM dbo.sysdiagrams where diagram_id = @DiagId ; 
+		return 0
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_creatediagram
+	(
+		@diagramname 	sysname,
+		@owner_id		int	= null, 	
+		@version 		int,
+		@definition 	varbinary(max)
+	)
+	WITH EXECUTE AS 'dbo'
+	AS
+	BEGIN
+		set nocount on
+	
+		declare @theId int
+		declare @retval int
+		declare @IsDbo	int
+		declare @userName sysname
+		if(@version is null or @diagramname is null)
+		begin
+			RAISERROR (N'E_INVALIDARG', 16, 1);
+			return -1
+		end
+	
+		execute as caller;
+		select @theId = DATABASE_PRINCIPAL_ID(); 
+		select @IsDbo = IS_MEMBER(N'db_owner');
+		revert; 
+		
+		if @owner_id is null
+		begin
+			select @owner_id = @theId;
+		end
+		else
+		begin
+			if @theId <> @owner_id
+			begin
+				if @IsDbo = 0
+				begin
+					RAISERROR (N'E_INVALIDARG', 16, 1);
+					return -1
+				end
+				select @theId = @owner_id
+			end
+		end
+		-- next 2 line only for test, will be removed after define name unique
+		if EXISTS(select diagram_id from dbo.sysdiagrams where principal_id = @theId and name = @diagramname)
+		begin
+			RAISERROR ('The name is already used.', 16, 1);
+			return -2
+		end
+	
+		insert into dbo.sysdiagrams(name, principal_id , version, definition)
+				VALUES(@diagramname, @theId, @version, @definition) ;
+		
+		select @retval = @@IDENTITY 
+		return @retval
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_renamediagram
+	(
+		@diagramname 		sysname,
+		@owner_id		int	= null,
+		@new_diagramname	sysname
+	
+	)
+	WITH EXECUTE AS 'dbo'
+	AS
+	BEGIN
+		set nocount on
+		declare @theId 			int
+		declare @IsDbo 			int
+		
+		declare @UIDFound 		int
+		declare @DiagId			int
+		declare @DiagIdTarg		int
+		declare @u_name			sysname
+		if((@diagramname is null) or (@new_diagramname is null))
+		begin
+			RAISERROR ('Invalid value', 16, 1);
+			return -1
+		end
+	
+		EXECUTE AS CALLER;
+		select @theId = DATABASE_PRINCIPAL_ID();
+		select @IsDbo = IS_MEMBER(N'db_owner'); 
+		if(@owner_id is null)
+			select @owner_id = @theId;
+		REVERT;
+	
+		select @u_name = USER_NAME(@owner_id)
+	
+		select @DiagId = diagram_id, @UIDFound = principal_id from dbo.sysdiagrams where principal_id = @owner_id and name = @diagramname 
+		if(@DiagId IS NULL or (@IsDbo = 0 and @UIDFound <> @theId))
+		begin
+			RAISERROR ('Diagram does not exist or you do not have permission.', 16, 1)
+			return -3
+		end
+	
+		-- if((@u_name is not null) and (@new_diagramname = @diagramname))	-- nothing will change
+		--	return 0;
+	
+		if(@u_name is null)
+			select @DiagIdTarg = diagram_id from dbo.sysdiagrams where principal_id = @theId and name = @new_diagramname
+		else
+			select @DiagIdTarg = diagram_id from dbo.sysdiagrams where principal_id = @owner_id and name = @new_diagramname
+	
+		if((@DiagIdTarg is not null) and  @DiagId <> @DiagIdTarg)
+		begin
+			RAISERROR ('The name is already used.', 16, 1);
+			return -2
+		end		
+	
+		if(@u_name is null)
+			update dbo.sysdiagrams set [name] = @new_diagramname, principal_id = @theId where diagram_id = @DiagId
+		else
+			update dbo.sysdiagrams set [name] = @new_diagramname where diagram_id = @DiagId
+		return 0
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_alterdiagram
+	(
+		@diagramname 	sysname,
+		@owner_id	int	= null,
+		@version 	int,
+		@definition 	varbinary(max)
+	)
+	WITH EXECUTE AS 'dbo'
+	AS
+	BEGIN
+		set nocount on
+	
+		declare @theId 			int
+		declare @retval 		int
+		declare @IsDbo 			int
+		
+		declare @UIDFound 		int
+		declare @DiagId			int
+		declare @ShouldChangeUID	int
+	
+		if(@diagramname is null)
+		begin
+			RAISERROR ('Invalid ARG', 16, 1)
+			return -1
+		end
+	
+		execute as caller;
+		select @theId = DATABASE_PRINCIPAL_ID();	 
+		select @IsDbo = IS_MEMBER(N'db_owner'); 
+		if(@owner_id is null)
+			select @owner_id = @theId;
+		revert;
+	
+		select @ShouldChangeUID = 0
+		select @DiagId = diagram_id, @UIDFound = principal_id from dbo.sysdiagrams where principal_id = @owner_id and name = @diagramname 
+		
+		if(@DiagId IS NULL or (@IsDbo = 0 and @theId <> @UIDFound))
+		begin
+			RAISERROR ('Diagram does not exist or you do not have permission.', 16, 1);
+			return -3
+		end
+	
+		if(@IsDbo <> 0)
+		begin
+			if(@UIDFound is null or USER_NAME(@UIDFound) is null) -- invalid principal_id
+			begin
+				select @ShouldChangeUID = 1 ;
+			end
+		end
+
+		-- update dds data			
+		update dbo.sysdiagrams set definition = @definition where diagram_id = @DiagId ;
+
+		-- change owner
+		if(@ShouldChangeUID = 1)
+			update dbo.sysdiagrams set principal_id = @theId where diagram_id = @DiagId ;
+
+		-- update dds version
+		if(@version is not null)
+			update dbo.sysdiagrams set version = @version where diagram_id = @DiagId ;
+
+		return 0
+	END
+	
+
+	CREATE PROCEDURE dbo.sp_dropdiagram
+	(
+		@diagramname 	sysname,
+		@owner_id	int	= null
+	)
+	WITH EXECUTE AS 'dbo'
+	AS
+	BEGIN
+		set nocount on
+		declare @theId 			int
+		declare @IsDbo 			int
+		
+		declare @UIDFound 		int
+		declare @DiagId			int
+	
+		if(@diagramname is null)
+		begin
+			RAISERROR ('Invalid value', 16, 1);
+			return -1
+		end
+	
+		EXECUTE AS CALLER;
+		select @theId = DATABASE_PRINCIPAL_ID();
+		select @IsDbo = IS_MEMBER(N'db_owner'); 
+		if(@owner_id is null)
+			select @owner_id = @theId;
+		REVERT; 
+		
+		select @DiagId = diagram_id, @UIDFound = principal_id from dbo.sysdiagrams where principal_id = @owner_id and name = @diagramname 
+		if(@DiagId IS NULL or (@IsDbo = 0 and @UIDFound <> @theId))
+		begin
+			RAISERROR ('Diagram does not exist or you do not have permission.', 16, 1)
+			return -3
+		end
+	
+		delete from dbo.sysdiagrams where diagram_id = @DiagId;
+	
+		return 0;
+	END
+	
+
+CREATE PROCEDURE [dbo].[Extract_Turkey_Newest_sp] AS
+
+DROP TABLE Extract_Turkey_Newest;
+
+CREATE TABLE [dbo].[Extract_Turkey_Newest](
+	[Field 2] [varchar](100) NULL,
+	[Field 3] [nvarchar](204) NULL,
+	[Field 4] [nvarchar](207) NULL,
+	[Field 5] [nvarchar](212) NULL,
+	[Field 6] [nvarchar](210) NULL,
+	[Field 7] [nvarchar](244) NULL,
+	[Field 8] [nvarchar](214) NULL,
+	[Field 9] [nvarchar](216) NULL,
+	[Field 10] [varchar](100) NULL,
+	[Field 11] [varchar](100) NULL,
+	[Field 12] [nvarchar](215) NULL,
+	[Field 13] [nvarchar](215) NULL,
+	[Field 14] [nvarchar](208) NULL,
+	[Field 15] [nvarchar](222) NULL,
+	[Field 16] [nvarchar](213) NULL,
+	[Field 17] [nvarchar](222) NULL,
+	[Field 18] [nvarchar](212) NULL,
+	[Field 19] [nvarchar](219) NULL,
+	[Field 20] [nvarchar](211) NULL,
+	[Field 21] [nvarchar](220) NULL,
+	[Field 22] [nvarchar](220) NULL,
+	[Field 23] [nvarchar](228) NULL,
+	[Field 24] [nvarchar](216) NULL,
+	[Field 25] [nvarchar](207) NULL,
+	[Field 26] [nvarchar](208) NULL,
+	[Field 27] [nvarchar](211) NULL,
+	[Field 28] [nvarchar](215) NULL,
+	[Field 29] [nvarchar](224) NULL,
+	[Field 30] [nvarchar](217) NULL,
+	[Field 31] [nvarchar](212) NULL,
+	[Field 32] [nvarchar](222) NULL,
+	[Field 33] [nvarchar](214) NULL,
+	[Field 34] [int] NULL,
+	[Field 35] [nvarchar](222) NULL,
+	[Field 36] [nvarchar](234) NULL,
+	[Field 37] [nvarchar](224) NULL,
+	[Field 38] [nvarchar](201) NULL,
+	[Field 39] [nvarchar](201) NULL,
+	isStartGrEnd AS CASE WHEN ISDATE([Field 5]) = 1 AND ISDATE([Field 6]) = 1 AND 
+				  CAST(CONVERT(DATE,CAST( CAST([Field 5] AS VARCHAR) AS  DATE),120) AS DATE) > 
+			      CAST(CONVERT(DATE,CAST(CAST([Field 6] AS VARCHAR) AS DATE),120) AS DATE) 
+			 THEN 1
+			ELSE  0
+		 END,
+	isEndLeStart AS CASE  WHEN ISDATE([Field 5]) = 1 AND ISDATE([Field 6]) = 1 AND 
+				CAST(CONVERT(DATE,CAST(  CAST([Field 6] AS VARCHAR) AS   DATE),120) AS DATE) < 
+			 	CAST(CONVERT(DATE,CAST(CAST([Field 5] AS VARCHAR) AS DATE),120) AS DATE) 
+		     THEN 1
+			 ELSE 0
+		END,
+	[Title] [nvarchar](222) NULL,
+	[External_ID__c] [varbinary](8000) NULL,
+	[External_pk] [int] NULL,
+	[VersionNumber] [bigint] NULL,
+	[Row] [float] NULL
+) ON [PRIMARY];
+
+INSERT INTO [dbo].[Extract_Turkey_Newest]
+           ([Field 2]
+           ,[Field 3]
+           ,[Field 4]
+           ,[Field 5]
+           ,[Field 6]
+           ,[Field 7]
+           ,[Field 8]
+           ,[Field 9]
+           ,[Field 10]
+           ,[Field 11]
+           ,[Field 12]
+           ,[Field 13]
+           ,[Field 14]
+           ,[Field 15]
+           ,[Field 16]
+           ,[Field 17]
+           ,[Field 18]
+           ,[Field 19]
+           ,[Field 20]
+           ,[Field 21]
+           ,[Field 22]
+           ,[Field 23]
+           ,[Field 24]
+           ,[Field 25]
+           ,[Field 26]
+           ,[Field 27]
+           ,[Field 28]
+           ,[Field 29]
+           ,[Field 30]
+           ,[Field 31]
+           ,[Field 32]
+           ,[Field 33]
+           ,[Field 34]
+           ,[Field 35]
+           ,[Field 36]
+           ,[Field 37]
+           ,[Field 38]
+           ,[Field 39]
+--           ,[isStartGrEnd]
+--           ,[isEndLeStart]
+           ,[Title]
+           ,[External_ID__c]
+           ,[External_pk]
+           ,[VersionNumber]
+           ,[Row])
+
+SELECT    dbo.ReplaceExtraChars([Field 1]) AS [Field 2]
+         ,[Field 2] AS [Field 3]
+		 ,[Field 3] AS [Field 4]
+		 ,[Field 4] AS [Field 5]
+		 ,[Field 5] AS [Field 6]
+		 ,[Field 6] AS [Field 7]
+		 ,[Field 7] AS [Field 8]
+		 ,[Field 8] AS [Field 9]
+		 ,dbo.ReplaceExtraChars([Field 9]) AS [Field 10]
+		,dbo.ReplaceExtraChars([Field 10]) AS [Field 11]
+		,[Field 11] AS [Field 12]
+		,[Field 12] AS [Field 13]
+		,[Field 13] AS [Field 14]
+		,[Field 14] AS [Field 15]
+		,[Field 15] AS [Field 16]
+		,[Field 16] AS [Field 17]
+		,[Field 17] AS [Field 18]
+		,[Field 18] AS [Field 19]
+		,[Field 19] AS [Field 20]
+		,[Field 20] AS [Field 21]
+		,[Field 21] AS [Fie
+ld 22]
+		,[Field 22] AS [Field 23]
+		,[Field 23] AS [Field 24]
+		,[Field 24] AS [Field 25]
+		,[Field 25] AS [Field 26]
+		,[Field 26] AS [Field 27]
+		,[Field 27] AS [Field 28]
+		,[Field 28] AS [Field 29]
+		,[Field 29] AS [Field 30]
+		,[Field 30] AS [Field 31]
+		,[Field 31] AS [Field 32]
+		,[Field 32] AS [Field 33]
+		,NULL		AS [Field 34]	--Match with LR turkey data
+		,[Field 33] AS [Field 35]
+		,[Field 34] AS [Field 36]
+		,[Field 35] AS [Field 37]
+		,[Field 36] AS [Field 38]
+		,[Field 37] AS [Field 39]
+/*
+		,CASE WHEN ISDATE([Field 5]) = 1 AND ISDATE([Field 6]) = 1 AND 
+				  CAST(CONVERT(DATE,CAST( CAST([Field 5] AS VARCHAR) AS  DATE),120) AS DATE) > 
+			      CAST(CONVERT(DATE,CAST(CAST([Field 6] AS VARCHAR) AS DATE),120) AS DATE) 
+			 THEN 1
+			ELSE  0
+		 END AS isStartGrEnd
+	,CASE  WHEN ISDATE([Field 5]) = 1 AND ISDATE([Field 6]) = 1 AND 
+				CAST(CONVERT(DATE,CAST(  CAST([Field 6] AS VARCHAR) AS   DATE),120) AS DATE) < 
+			 	CAST(CONVERT(DATE,CAST(CAST([Field 5] AS VARCHAR) AS DATE),120) AS DATE) 
+		     THEN 1
+			 ELSE 0
+		END AS isEndLeStart
+*/
+		,Title
+		,HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 1]), '') 
+						 + ISNULL(dbo.ReplaceExtraChars([Field 12]), '') 
+						 + ISNULL(dbo.ReplaceExtraChars([Field 15]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 5]), '')
+						 + ISNULL(dbo.ReplaceExtraChars([Field 6]), '')
+	  
+	  ) AS External_ID__c
+/*		,RANK() OVER (ORDER BY HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 1]), '') 
+													 + ISNULL(dbo.ReplaceExtraChars([Field 12]), '') 
+													 + ISNULL(dbo.ReplaceExtraChars([Field 15]), '')
+													 + ISNULL(dbo.ReplaceExtraChars([Field 5]), '')
+													 + ISNULL(dbo.ReplaceExtraChars([Field 6]), '')) ) 
+				AS External_pk
+*/
+		,ha.External_pk
+		,VersionNumber
+		,Row
+--  INTO XaxisETL.dbo.Extract_Turkey_Newest
+  FROM [XaxisETL].[dbo].[Extract_Turkey_Link] tu
+	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK WHERE Filter = 'Turkey_Non_LR') ha
+		ON HashBytes('MD5',  ISNULL(dbo.ReplaceExtraChars([Field 1]), '') 
+						   + ISNULL(dbo.ReplaceExtraChars([Field 12]), '') 
+						   + ISNULL(dbo.ReplaceExtraChars([Field 15]), '')
+						   + ISNULL(dbo.ReplaceExtraChars([Field 5]), '')
+						   + ISNULL(dbo.ReplaceExtraChars([Field 6]), '')
+	  ) = ha.External_pk
+WHERE VersionNumber = (SELECT MAX(VersionNumber) AS VersionNumber
+					   FROM [XaxisETL].[dbo].[Extract_Turkey_Link])
+  AND ContentModifiedDate = (SELECT MAX(ContentModifiedDate) AS ContentModifiedDate
+							 FROM [XaxisETL].[dbo].[Extract_Turkey_Link])
+
+  AND [Field 8] IS NOT NULL
+ -- AND [Field 8] <> 'Agency'
+  AND [Field 8] <> 'Needs mapping to Turkish Agencies int the system'
+  AND [Field 8] <> 'Campaign Details'
+
+
+
+CREATE PROCEDURE utility.Log_ProcedureCall
+ @ObjectID       INT,
+ @DatabaseID     INT = NULL,
+ @AdditionalInfo NVARCHAR(MAX) = NULL
+AS
+BEGIN
+ SET NOCOUNT ON;
+ 
+ DECLARE 
+  @ProcedureName NVARCHAR(400);
+  
+ SELECT
+  @DatabaseID = COALESCE(@DatabaseID, DB_ID()),
+  @ProcedureName = COALESCE
+  (
+   QUOTENAME(DB_NAME(@DatabaseID)) + '.'
+   + QUOTENAME(OBJECT_SCHEMA_NAME(@ObjectID, @DatabaseID)) 
+   + '.' + QUOTENAME(OBJECT_NAME(@ObjectID, @DatabaseID)),
+   ERROR_PROCEDURE()
+  );
+ 
+ INSERT Utility.dbo.ProcedureLog
+ (
+  DatabaseID,
+  ObjectID,
+  ProcedureName,
+  ErrorLine,
+  ErrorMessage,
+  AdditionalInfo
+ )
+ SELECT
+  @DatabaseID,
+  @ObjectID,
+  @ProcedureName,
+  ERROR_LINE(),
+  ERROR_MESSAGE(),
+  @AdditionalInfo;
+END
+
  
 -
 Nordics
@@ -2207,7 +3602,7 @@ WHERE Id IS NULL
 
 
 CREATE PROCEDURE [dbo].[Turkey_Sell_Lines_New_sp] @FilterName VARCHAR(50) AS
---DECLARE @FilterName VARCHAR(50) = 'Turkey_LR';
+--DECLARE @FilterName VARCHAR(50) = 'Turkey_Non_LR';
 DECLARE @ExternalString VARCHAR(10);
 
 IF OBJECT_ID('tempdb..#temp_opp') IS NOT NULL DROP TABLE #temp_opp;
@@ -2232,14 +3627,14 @@ SELECT DISTINCT et.External_ID__c
 INTO #new_sl
 FROM XaxisETL.dbo.Extract_Turkey et
 	LEFT JOIN (SELECT *
-			   FROM XaxisETL.dbo.Turkey_HASH_to_PK_2
+			   FROM XaxisETL.dbo.Turkey_HASH_to_PK
 			   WHERE Filter = @FilterName
 			   ) sl
 		ON sl.External_ID__c = et.External_ID__c
 WHERE et.Filter = @FilterName
   AND sl.External_ID__c IS NULL;
 
-INSERT INTO XaxisETL.dbo.Turkey_HASH_to_PK_2(Filter, External_ID__c)
+INSERT INTO XaxisETL.dbo.Turkey_HASH_to_PK(Filter, External_ID__c)
 SELECT @FilterName
 	  ,External_ID__C
 FROM #new_sl
@@ -2253,7 +3648,8 @@ SELECT opp.Id AS Opportunity__c
 --	  ,'TurkeyLR:' + CAST(et.External_pk AS VARCHAR) AS External_ID__c
 	  ,@ExternalString + CAST(sl.External_pk AS VARCHAR) AS External_ID__c
 --	  ,dbo.ReplaceExtraChars([Field 15]) AS Product_Detail__c
-	  ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15]))  AS Product_Detail__c
+--	  ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15]))  AS Product_Detail__c
+	  ,ISNULL(ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15])), 'None')  AS Special_Product__c
       , CASE WHEN CAST(CONVERT(DATE,CAST([Field 6] AS DATE),101) AS DATE) > 
 			      CAST(CONVERT(DATE,CAST([Field 7] AS DATE),101) AS DATE) 
 			 THEN CAST(CONVERT(DATE,CAST([Field 7] AS DATE),101) AS DATE)
@@ -2268,7 +3664,7 @@ SELECT opp.Id AS Opportunity__c
       ,'Net Cost (Calc Margin)' AS Imputing_Margin_or_Net__c
       ,'MediaTrader' AS PackageType__c
       ,(SELECT TOP 1 Id FROM RecordType WHERE SobjectType = 'Opportunity_Buy__c' AND DeveloperName = 'Turkey') AS RecordTypeId
-      ,dbo.ReplaceExtraChars([Field 13]) AS Supplier_Name__c
+      ,ISNULL(dbo.ReplaceExtraChars([Field 13]), 'None') AS Supplier_Name__c
       ,CONVERT(MONEY, REPLACE(REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 21], 0)), ',',''), 'TL', ''), 'click', '')) AS Buy_Volume__c
 --      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 31], 0)), ',',''), 'TL', '')) AS Gross_Cost__c
 --	  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 32], 0)), ',',''), 'TL', '')) AS Net_Cost__c
@@ -2278,18 +3674,19 @@ SELECT opp.Id AS Opportunity__c
       ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 20], 0)), ',',''), 'TL', '')) AS Rate__c
 --      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 32], 0)), ',',''), 'TL', '')) AS Media_Net_Cost__c
 	  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 29], 0)), ',',''), 'TL', '')) AS Media_Net_Cost__c
-      ,dbo.ReplaceExtraChars(ISNULL([Field 16], 'CPM')) AS Buy_Type__c
-      ,'Triggers' AS Audience_Tier__c
-      ,CONVERT(MONEY, REPLACE(REPL
-ACE(dbo.ReplaceExtraChars(ISNULL([Field 37], 0)), ',',''), '%',''))/100 AS Current_Margin__c
+      ,dbo.ReplaceExtraChar
+s(ISNULL([Field 16], 'CPM')) AS Buy_Type__c
+--      ,'Triggers' AS Audience_Tier__c
+      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 37], 0)), ',',''), '%',''))/100 AS Current_Margin__c
       ,'From spreadsheet: ' + et.Title AS Current_Margin_Explanation__c
       ,dbo.ReplaceExtraChars([Field 17]) AS Opp_Buy_Description__c
       ,'Externally Managed' AS Input_Mode__c
 --	  ,'Digital' AS Media_Code__c
 	  ,ISNULL(ch.sf_value, 'Digital') AS Media_Code__c
-	  ,dbo.ReplaceExtraChars([Field 18]) AS Formats__c
+	  ,ISNULL(dbo.ReplaceExtraChars([Field 18]), 'None') AS Formats__c
 --	  ,sl.Id
 --	  ,et.Filter
+	  ,'Turkey' AS Delivery_Market__c
 
 FROM XaxisETL.dbo.Extract_Turkey et
 	LEFT JOIN #temp_opp opp
@@ -2306,13 +3703,13 @@ FROM XaxisETL.dbo.Extract_Turkey et
 			     AND External_Id__c LIKE @ExternalString+'%') sl
 */
 	LEFT JOIN (SELECT *
-			   FROM XaxisETL.dbo.Turkey_HASH_to_PK_2
+			   FROM XaxisETL.dbo.Turkey_HASH_to_PK
 			   WHERE Filter = @FilterName
 			     AND External_ID__c NOT IN (SELECT External_ID__c FROM #new_sl)
 			   ) sl
 		ON et.External_ID__c = sl.External_ID__c
 --redundent rethink
-	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK_2
+	LEFT JOIN (SELECT External_ID__c, External_pk FROM XaxisETL.dbo.Turkey_HASH_to_PK
 			   WHERE Filter = @FilterName
 			     AND External_ID__c IN (SELECT External_ID__c FROM #new_sl)) sl2
 		ON et.External_ID__c = sl2.External_ID__c
@@ -2334,19 +3731,18 @@ FROM XaxisETL.dbo.Extract_Turkey et
 				  AND sf_type = 'Channels'
 				) ch
 		ON LTRIM(RTRIM([Field 15])) = ch.m_value
+   LEFT JOIN  (
+				SELECT REPLACE(REPLACE(External_Id__c, 'TurkeyLR:', ''), 'Turkey:', '') AS External_pk
+				FROM Production.dbo.Opportunity_Buy__c
+				WHERE External_Id__c LIKE @ExternalString + '%') prodId
+		ON CAST(sl.External_pk AS VARCHAR) = prodId.External_pk
 WHERE [Field 9] IS NOT NULL
   AND [Field 9] <> 'Agency'
   AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
   AND [Field 9] <> 'Campaign Details'
---  AND sl.External_Id__c IS NULL   
   AND et.Filter = @FilterName
---  AND sl.External_pk IS NULL
+  AND prodId.External_pk IS NULL
 
- -- AND opp.Id IS NULL
-   AND CAST(sl.External_pk AS VARCHAR) NOT IN (
-				SELECT REPLACE(External_Id__c, @ExternalString, '')
-				FROM Production.dbo.Opportunity_Buy__c
-				WHERE External_Id__c LIKE 'TurkeyLR%')
 
 
 
@@ -2436,7 +3832,7 @@ WHERE [Field 9] IS NOT NULL
 --CREATE VIEW [dbo].[Turkey_Sell_Lines] AS
 
 CREATE PROCEDURE [dbo].[Turkey_Sell_Lines_sp] @FilterName VARCHAR(50) AS
---DECLARE  @FilterName VARCHAR(50) = 'Turkey_LR';
+--DECLARE  @FilterName VARCHAR(50) = 'Turkey_Non_LR';
 
 IF OBJECT_ID('tempdb..#temp_opp') IS NOT NULL DROP TABLE #temp_opp;
 
@@ -2456,7 +3852,7 @@ SELECT opp.Id AS Opportunity__c
 --      ,CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) AS External_ID__c
 	  ,'TurkeyLR:' + CAST(et.External_pk AS VARCHAR) AS External_ID__c
 --	  ,dbo.ReplaceExtraChars([Field 15]) AS Product_Detail__c
-	  ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15]))  AS Product_Detail__c
+	  ,ISNULL(pro.sf_value, dbo.ReplaceExtraChars([Field 15]))  AS Special_Product__c
       ,CAST(CONVERT(DATE,[Field 6],101) AS DATE) AS Start_Date__c
       ,CAST(CONVERT(DATE,[Field 7],101) AS DATE) AS End_Date__c
       ,dbo.ReplaceExtraChars([Field 2]) AS Buy_Name_txt__c
@@ -2474,7 +3870,7 @@ SELECT opp.Id AS Opportunity__c
 --      ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 32], 0)), ',',''), 'TL', '')) AS Media_Net_Cost__c
 	  ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 29], 0)), ',',''), 'TL', '')) AS Media_Net_Cost__c
       ,dbo.ReplaceExtraChars(ISNULL([Field 16], 'CPM')) AS Buy_Type__c
-      ,'Triggers' AS Audience_Tier__c
+--      ,NULL AS Audience_Tier__c
       ,CONVERT(MONEY, REPLACE(REPLACE(dbo.ReplaceExtraChars(ISNULL([Field 37], 0)), ',',''), '%',''))/100 AS Current_Margin__c
       ,'From spreadsheet: ' + et.Title AS Current_Margin_Explanation__c
       ,dbo.ReplaceExtraChars([Field 17]) AS Opp_Buy_Description__c
@@ -2482,23 +3878,39 @@ SELECT opp.Id AS Opportunity__c
 --	  ,'Digital' AS Media_Code__c
 	  ,ISNULL(ch.sf_value, 'Digital') AS Media_Code__c
 	  ,dbo.ReplaceExtraChars([Field 18]) AS Formats__c
-	  ,sl.Id
+	  ,sl2.Id
+	  ,'Turkey' AS Delivery_Market__c
 --	  ,et.Filter
+
 FROM XaxisETL.dbo.Extract_Turkey et
 	LEFT JOIN #temp_opp opp
 		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(et.[Field 11]))) = opp.Name
 	   AND master.dbo.InitCap(LOWER(REPLACE(REPLACE(dbo.ReplaceExtraChars(et.[Field 10]), ' ', ''), '''', ''))) = REPLACE(REPLACE(opp.adv_Name, ' ', ''), '''', '')
 --	   AND CAST(External_pk AS VARCHAR) = REPLACE(et.External_ID__c, 'TurkeyOpp-', '')
+	LEFT JOIN (SELECT *
+			   FROM XaxisETL.dbo.Turkey_HASH_to_PK
+			   WHERE Filter = @FilterName
+			   ) sl
+		ON et.External_ID__c = sl.External_ID__c
 	LEFT JOIN (SELECT Id	
 				      ,External_Id__c
+			   FROM dbo.Opportunity_Buy__c
+			   WHERE External_Id__c LIKE @FilterName + '%') sl2
+		ON sl.External_pk = REPLACE(sl2.External_Id__c, @FilterName, '')
+/*	
+	 (SELECT Id	
+				    
+  ,External_Id__c
 			   FROM dbo.Opportunity_Buy__c) sl
 --		ON CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) = sl.External_Id__c
 		ON 'TurkeyLR:' + CAST(et.External_pk AS VARCHAR) = sl.External_Id__c
+*/
+
+
 	LEFT JOIN (SELECT m_value
 					 ,sf_value
 			   FROM XaxisETL.dbo.SF_Mapping
-			   WHERE sf_market = 'Tur
-key'
+			   WHERE sf_market = 'Turkey'
 			     AND sf_type = 'Products'
 			   ) pro
 		ON LTRIM(RTRIM([Field 15])) = pro.m_value
@@ -2513,9 +3925,9 @@ WHERE [Field 9] IS NOT NULL
   AND [Field 9] <> 'Agency'
   AND [Field 9] <> 'Needs mapping to Turkish Agencies int the system'
   AND [Field 9] <> 'Campaign Details'
-  AND sl.External_Id__c IS NULL   
-  AND Filter = @FilterName
-  AND sl.Id IS NULL
+  AND sl2.Id IS NULL   
+  AND et.Filter = @FilterName
+  AND sl.External_ID__c IS NULL
 
 
 
@@ -3594,15 +5006,12 @@ WHERE [Field 9] IS NOT NULL
 
 
 
-
-/****** Object:  View [dbo].[Turkey_Buy_Placement]    Script Date: 11/29/2016 3:48:28 PM ******/
---DROP VIEW [dbo].[Turkey_Buy_Placement]
-
 CREATE PROCEDURE [dbo].[Turkey_Buy_Placement_New_sp] @FilterName VARCHAR(50) AS
---DECLARE @FilterName VARCHAR(50) = 'Turkey_LR';
+--DECLARE @FilterName VARCHAR(50) = 'Turkey_Non_LR';
 DECLARE @ExternalString VARCHAR(10);
 
 IF OBJECT_ID('tempdb..#temp_opp') IS NOT NULL DROP TABLE #temp_opp;
+IF OBJECT_ID('tempdb..#new_sl') IS NOT NULL DROP TABLE #new_sl;
 
 IF @FilterName = 'Turkey_LR' SET @ExternalString = 'TurkeyLR:';
 IF @FilterName = 'Turkey_Non_LR' SET @ExternalString = 'Turkey:';
@@ -3618,6 +5027,17 @@ FROM Opportunity
 	INNER JOIN Company__c adv
 		ON Account.Advertiser__c = adv.Id
 WHERE Opportunity.Agency_Market__c = 'Turkey';
+
+SELECT DISTINCT et.External_ID__c
+INTO #new_sl
+FROM XaxisETL.dbo.Extract_Turkey et
+	LEFT JOIN (SELECT *
+			   FROM XaxisETL.dbo.Turkey_HASH_to_PK
+			   WHERE Filter = @FilterName
+			   ) sl
+		ON sl.External_ID__c = et.External_ID__c
+WHERE et.Filter = @FilterName
+  AND sl.External_ID__c IS NOT NULL;
 
 
 SELECT CASE WHEN LEN(dbo.ReplaceExtraChars([Field 2]) + ' - ' + sl.External_Id__c) > 80
@@ -3645,14 +5065,15 @@ FROM XaxisETL.dbo.Extract_Turkey et
 		ON dbo.ReplaceExtraChars(LTRIM(RTRIM(et.[Field 11]))) = opp.Name
 	   AND master.dbo.InitCap(LOWER(REPLACE(REPLACE(dbo.ReplaceExtraChars(et.[Field 10]), ' ', ''), '''', ''))) = REPLACE(REPLACE(opp.adv_Name, ' ', ''), '''', '')
 	LEFT JOIN (SELECT Id	
-				      ,External_Id__c
-			   FROM dbo.Opportunity_Buy__c
-			   WHERE External_Id__c IS NOT NULL
-			     AND External_Id__c LIKE @ExternalString+'%'
+				      ,sl2.External_Id__c
+					  ,ha.External_ID__c AS hash_pk
+			   FROM dbo.Opportunity_Buy__c sl2
+					INNER JOIN XaxisETL.dbo.Turkey_HASH_to_PK ha
+						ON REPLACE(REPLACE(sl2.External_Id__c, 'TurkeyOpp-', ''), @ExternalString, '') = ha.External_pk
+			   WHERE sl2.External_Id__c IS NOT NULL
+			     AND sl2.External_Id__c LIKE @ExternalString+'%'
 			   ) sl
---		ON CAST(CHECKSUM(dbo.ReplaceExtraChars([Field 13]), dbo.ReplaceExtraChars([Field 16]), dbo.ReplaceExtraChars([Field 2])) AS VARCHAR(25)) = sl.External_Id__c
---		ON 'TurkeyLR:' + CAST(et.External_pk AS VARCHAR) = sl.External_Id__c
-		ON  @ExternalString + CAST(et.External_pk AS VARCHAR) = @ExternalString + REPLACE(REPLACE(sl.External_Id__c, 'TurkeyOpp-', ''), @ExternalString, '')
+		ON  et.External_ID__c = sl.hash_pk
 	LEFT JOIN (SELECT Id	
 					 ,Name
 			   FROM dbo.Buy_Placement__c) bp
@@ -6094,4 +7515,54 @@ FROM #hash_sf
 		ON #hash_sf.External_Id__c = sq.External_ID__c
 
 */
+
+ 
+-
+Utility
+text
+----
+
+
+--USE XaxisETL
+--GO
+--CREATE SCHEMA utility AUTHORIZATION dbo;
+--GO
+CREATE PROCEDURE Log_ProcedureCall
+ @ObjectID       INT,
+ @DatabaseID     INT = NULL,
+ @AdditionalInfo NVARCHAR(MAX) = NULL
+AS
+BEGIN
+ SET NOCOUNT ON;
+ 
+ DECLARE 
+  @ProcedureName NVARCHAR(400);
+  
+ SELECT
+  @DatabaseID = COALESCE(@DatabaseID, DB_ID()),
+  @ProcedureName = COALESCE
+  (
+   QUOTENAME(DB_NAME(@DatabaseID)) + '.'
+   + QUOTENAME(OBJECT_SCHEMA_NAME(@ObjectID, @DatabaseID)) 
+   + '.' + QUOTENAME(OBJECT_NAME(@ObjectID, @DatabaseID)),
+   ERROR_PROCEDURE()
+  );
+ 
+ INSERT Utility.dbo.ProcedureLog
+ (
+  DatabaseID,
+  ObjectID,
+  ProcedureName,
+  ErrorLine,
+  ErrorMessage,
+  AdditionalInfo
+ )
+ SELECT
+  @DatabaseID,
+  @ObjectID,
+  @ProcedureName,
+  ERROR_LINE(),
+  ERROR_MESSAGE(),
+  @AdditionalInfo;
+END
 
